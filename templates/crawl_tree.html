@@ -3,18 +3,62 @@
 <head>
   <meta charset="utf-8">
   <title>Visualización árbol crawling</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-    .node circle.expandable { fill: #2176c1; cursor: pointer; }
-    .node circle.leaf { fill: #6baed6; cursor: pointer; }
-    .node text { font: 12px sans-serif; pointer-events: none; }
-    .link { fill: none; stroke: #aaa; stroke-width: 2px; }
-    .node:hover circle { stroke: #333; stroke-width: 2px; }
-    svg { overflow: auto; }
+    .node circle.expandable { fill: #4f8cff; cursor: pointer; stroke: #2176c1; stroke-width: 2px; transition: fill 0.2s; }
+    .node circle.leaf { fill: #b3d1ff; cursor: pointer; stroke: #6baed6; stroke-width: 2px; transition: fill 0.2s; }
+    .node text { font: 15px 'Segoe UI', Arial, sans-serif; pointer-events: auto; fill: #222; }
+    .link { fill: none; stroke: #b3b3b3; stroke-width: 2.5px; stroke-opacity: 0.7; }
+    .node:hover circle { stroke: #ff9800; stroke-width: 3px; fill: #ffe0b2; }
+    body {
+      background: linear-gradient(135deg, #e3f2fd 0%, #f7faff 100%);
+      font-family: 'Segoe UI', Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+    }
+    .main-container {
+      max-width: 2000px;
+      margin: 40px auto 0 auto;
+      background: #fff;
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(80,120,180,0.12);
+      padding: 32px 24px 24px 24px;
+      min-height: 80vh;
+    }
+    h1 {
+      text-align: center;
+      color: #2176c1;
+      font-size: 2.2em;
+      margin-bottom: 18px;
+      letter-spacing: 1px;
+    }
+    svg { overflow: auto; background: #f7faff; border-radius: 12px; box-shadow: 0 2px 12px rgba(80,120,180,0.08); }
+    .node text { max-width: 500px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
+    .tooltip {
+      font-family: 'Segoe UI', Arial, sans-serif;
+    }
+    .tooltip {
+      position: absolute;
+      background: #fff;
+      border: 1px solid #aaa;
+      padding: 4px 8px;
+      font-size: 12px;
+      color: #333;
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      display: none;
+    }
   </style>
 </head>
 <body>
-  <svg width="1200" height="800"></svg>
+  <div class="main-container">
+    <h1>Mapa visual del árbol de crawling</h1>
+    <svg width="1800" height="1200"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </div>
   <script>
     // Cargar crawl_tree.json automáticamente
     fetch('../reports/crawl_tree.json')
@@ -43,12 +87,9 @@
         let root = d3.hierarchy(data);
         treeLayout(root);
 
-        // Función para actualizar el árbol (expandir/colapsar)
         function update(source) {
-          // Limpiar SVG
           svg.selectAll('*').remove();
           treeLayout(root);
-          // Dibuja enlaces
           svg.selectAll('.link')
             .data(root.links())
             .enter().append('path')
@@ -56,14 +97,13 @@
             .attr('d', d3.linkHorizontal()
               .x(d => d.y)
               .y(d => d.x));
-          // Dibuja nodos
           const node = svg.selectAll('.node')
             .data(root.descendants())
             .enter().append('g')
             .attr('class', 'node')
             .attr('transform', d => `translate(${d.y},${d.x})`);
           node.append('circle')
-            .attr('r', 8)
+            .attr('r', 14)
             .attr('class', d => (d.children || d._children) ? 'expandable' : 'leaf')
             .on('click', function(event, d) {
               if (d.children) {
@@ -73,13 +113,41 @@
                 d.children = d._children;
                 d._children = null;
               }
+              svg.transition().duration(350);
               update(d);
             });
           node.append('text')
-            .attr('dy', 3)
-            .attr('x', d => d.children || d._children ? -12 : 12)
+            .attr('dy', 5)
+            .attr('x', d => d.children || d._children ? -18 : 18)
             .style('text-anchor', d => d.children || d._children ? 'end' : 'start')
-            .text(d => d.data.name);
+            .style('cursor', 'pointer')
+            .text(d => d.data.name.length > 60 ? d.data.name.slice(0,60) + '...' : d.data.name)
+            .on('mouseover', function(event, d) {
+              const tooltip = document.getElementById('tooltip');
+              tooltip.style.display = 'block';
+              tooltip.innerHTML = d.data.name;
+              if (/^https?:\/\//.test(d.data.name)) {
+                tooltip.innerHTML += '<br><span style="color:#2176c1;font-size:11px">Ctrl+Click para abrir</span>';
+              }
+              tooltip.style.left = (event.pageX + 10) + 'px';
+              tooltip.style.top = (event.pageY - 10) + 'px';
+            })
+            .on('mousemove', function(event) {
+              const tooltip = document.getElementById('tooltip');
+              tooltip.style.left = (event.pageX + 10) + 'px';
+              tooltip.style.top = (event.pageY - 10) + 'px';
+            })
+            .on('mouseout', function() {
+              const tooltip = document.getElementById('tooltip');
+              tooltip.style.display = 'none';
+            })
+            .on('click', function(event, d) {
+              if (event.ctrlKey && /^https?:\/\//.test(d.data.name)) {
+                window.open(d.data.name, '_blank');
+              }
+            });
+          // Separación vertical extra
+          root.each(function(d) { d.x = d.x * 1.25; });
         }
         // Inicialmente colapsar todos los nodos excepto el primer nivel
         root.children.forEach(collapse);
