@@ -313,3 +313,68 @@ python test_csrf_cors_lfi.py
 
 Para más detalles sobre estos módulos, consulta:
 - [docs/CSRF_CORS_LFI_MODULES.md](docs/CSRF_CORS_LFI_MODULES.md)
+
+
+## Sistema de Validación
+
+### Validación Automática
+
+El framework incluye un sistema de validación que reduce falsos positivos:
+
+```python
+from core.scanner import Scanner
+from modules.sqli import SQLiModule
+
+# Configuración con validación habilitada (por defecto)
+config = {
+    "target_url": "https://example.com",
+    "enable_validation": True,  # Validación automática
+    "filter_low_confidence": False  # Mostrar todos los hallazgos
+}
+
+scanner = Scanner("https://example.com", config)
+scanner.register_module(SQLiModule(config))
+scanner.run()
+
+# Cada hallazgo incluye:
+# - confidence_score: 0-100
+# - validation_status: 'validated' o 'low_confidence'
+```
+
+### Scoring de Confianza
+
+| Rango | Clasificación | Descripción |
+|-------|---------------|-------------|
+| 90-100% | 🟢 Muy Alta | Evidencia sólida |
+| 70-89% | 🟡 Alta | Evidencia clara |
+| 60-69% | 🟠 Media | Evidencia moderada |
+| 0-59% | 🔴 Baja | Evidencia débil |
+
+### Prueba del Sistema
+
+```bash
+# Ejecutar pruebas de validación
+python test_validation_system.py
+
+# Ver resultados en:
+# reports/validation_test_results.json
+```
+
+### Filtrar Baja Confianza
+
+```python
+config = {
+    "enable_validation": True,
+    "filter_low_confidence": True  # Solo reportar confianza >= 60%
+}
+```
+
+### Estadísticas de Validación
+
+El scanner muestra automáticamente:
+- Total de hallazgos validados
+- Confianza promedio
+- Distribución por rangos de confianza
+- Hallazgos de baja confianza
+
+Para más detalles: [docs/VALIDATION_SYSTEM.md](docs/VALIDATION_SYSTEM.md)

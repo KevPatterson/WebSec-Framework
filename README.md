@@ -560,7 +560,21 @@ websec-framework/
 
 ## Cambios recientes
 
-### v0.4.0 (Febrero 2026) - ACTUAL
+### v0.5.0 (Febrero 2026) - ACTUAL
+- ✅ **Sistema de Validación Completo**: Reducción de falsos positivos
+  - Comparación de respuestas baseline con cache inteligente
+  - Detección automática de falsos positivos
+  - Scoring de confianza (0-100) multi-factor
+  - Análisis de diferencias significativas (status, longitud, similitud)
+  - Validación específica por tipo de vulnerabilidad
+  - Estadísticas detalladas de validación
+  - Filtrado opcional de baja confianza
+  - 600+ líneas de código en `core/validator.py`
+- ✅ **Integración con Scanner**: Validación automática de hallazgos
+- ✅ **Documentación completa**: docs/VALIDATION_SYSTEM.md
+- ✅ **Script de prueba**: test_validation_system.py
+
+### v0.4.0 (Febrero 2026)
 - ✅ **Módulo CSRF completo**: Detección de Cross-Site Request Forgery
   - Análisis de tokens CSRF en formularios
   - Validación de SameSite cookies
