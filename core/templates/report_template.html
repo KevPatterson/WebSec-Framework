@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reporte de Seguridad Web</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 2em; background: #f8f8f8; }
+        h1 { color: #2c3e50; }
+        .meta { color: #555; margin-bottom: 1em; }
+        table { border-collapse: collapse; width: 100%; background: #fff; }
+        th, td { border: 1px solid #ccc; padding: 0.5em; }
+        th { background: #eaeaea; }
+        .sev-high { color: #c0392b; font-weight: bold; }
+        .sev-medium { color: #e67e22; font-weight: bold; }
+        .sev-low { color: #2980b9; font-weight: bold; }
+        .evidence { font-size: 0.95em; color: #444; background: #f4f4f4; padding: 0.5em; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Reporte de Seguridad Web</h1>
+    <div class="meta">
+        <strong>Fecha:</strong> {{ date }}<br>
+        <strong>Objetivo:</strong> {{ target_url }}<br>
+        <strong>Total de hallazgos:</strong> {{ findings|length }}
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Vulnerabilidad</th>
+                <th>Severidad</th>
+                <th>Impacto</th>
+                <th>Recomendación</th>
+                <th>Evidencia</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for f in findings %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ f.tipo }}</td>
+                <td class="sev-{{ f.severidad|lower }}">{{ f.severidad }}</td>
+                <td>{{ f.impacto }}</td>
+                <td>{{ f.recomendacion }}</td>
+                <td><div class="evidence">{{ f.evidencia }}</div></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

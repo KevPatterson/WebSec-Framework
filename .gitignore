@@ -1,0 +1,46 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# Entornos virtuales
+venv/
+.env/
+.venv/
+ENV/
+
+# Archivos temporales y logs
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# Reportes y resultados
+reports/
+
+# Archivos de configuración de usuario
+*.sublime-workspace
+*.sublime-project
+.vscode/
+
+# Playwright
+playwright-report/
+
+# Binarios y herramientas externas
+/tools/nuclei/
+/tools/sqlmap/
+/tools/zap/
+/tools/wkhtmltopdf/
+
+# Otros
+*.bak
+*.old
+
+# Jupyter Notebooks
+.ipynb_checkpoints/
+
+# PDF generados
+*.pdf

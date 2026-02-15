@@ -1,0 +1,14 @@
+# Para exportar reportes en PDF
+weasyprint>=60.0
+# CSV es estándar en Python (no requiere instalación)
+# Dependencias principales para WebSec Framework
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.3
+jinja2>=3.1.2
+colorlog>=6.7.0
+pyyaml>=6.0
+
+# Recomendadas para desarrollo/profesional
+# playwright>=1.40.0   # Crawling JS dinámico (opcional)
+# pytest>=7.4.0        # Testing

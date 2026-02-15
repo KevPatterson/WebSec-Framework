@@ -1,0 +1,6 @@
+# Configuración de objetivo de ejemplo
+url: "https://example.com"
+cookies: ""
+headers: {}
+timeout: 10
+user_agent: "Mozilla/5.0 (compatible; WebSecFramework/1.0)"
