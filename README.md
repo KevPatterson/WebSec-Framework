@@ -1,3 +1,6 @@
+# Descripción
+
+**WebSec Framework** es una plataforma modular y profesional para el análisis de seguridad en aplicaciones web. Permite automatizar el descubrimiento de vulnerabilidades, el fingerprinting tecnológico y la generación de reportes avanzados, integrando herramientas líderes del sector y facilitando la extensión mediante módulos y payloads personalizados. Su objetivo es ofrecer una solución flexible, potente y fácil de usar tanto para pentesters como para equipos de desarrollo y seguridad.
 ## Instalación
 
 1. Clona el repositorio y entra al directorio del proyecto.
