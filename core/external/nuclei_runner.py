@@ -321,10 +321,14 @@ class NucleiRunner:
             if result.stderr:
                 self.logger.warning(f"Nuclei stderr: {result.stderr.strip()}")
             if output_file:
+                from datetime import datetime
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                base, ext = os.path.splitext(output_file)
+                output_file_ts = f"{base}_{timestamp}{ext}"
                 try:
-                    with open(output_file, "w", encoding="utf-8") as f:
+                    with open(output_file_ts, "w", encoding="utf-8") as f:
                         json.dump(findings, f, indent=2, ensure_ascii=False)
-                    self.logger.info(f"Salida de Nuclei guardada en {output_file}")
+                    self.logger.info(f"Salida de Nuclei guardada en {output_file_ts}")
                 except Exception as e:
                     self.logger.error(f"No se pudo guardar el output de Nuclei: {e}")
             self.logger.info(f"Nuclei hallazgos: {len(findings)}")

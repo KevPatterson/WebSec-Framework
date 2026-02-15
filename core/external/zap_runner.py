@@ -39,7 +39,9 @@ class ZapRunner:
                 f"También puedes configurar zap_path en config."
             )
             return []
-        cmd = [zap_exec, "-cmd", "-quickurl", target, "-quickout", "zap_report.json"]
+        from datetime import datetime
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        cmd = [zap_exec, "-cmd", "-quickurl", target, "-quickout", f"zap_report_{timestamp}.json"]
         if extra_args:
             cmd += extra_args
         self.logger.info(f"Ejecutando ZAP: {' '.join(cmd)}")

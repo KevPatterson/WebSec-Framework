@@ -43,7 +43,9 @@ class SqlmapRunner:
         if sqlmap_exec.endswith('.py'):
             cmd = ["python", sqlmap_exec, "-u", target, "--batch", "--output-dir=tmp_sqlmap", "--risk=3", "--level=5", "--random-agent", "--flush-session", "--answers=follow=Y"]
         else:
-            cmd = [sqlmap_exec, "-u", target, "--batch", "--output-dir=tmp_sqlmap", "--risk=3", "--level=5", "--random-agent", "--flush-session", "--answers=follow=Y"]
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            cmd = [sqlmap_exec, "-u", target, "--batch", f"--output-dir=tmp_sqlmap_{timestamp}", "--risk=3", "--level=5", "--random-agent", "--flush-session", "--answers=follow=Y"]
         if data:
             cmd += ["--data", data]
         if extra_args:
