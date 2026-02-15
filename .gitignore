@@ -38,6 +38,10 @@ playwright-report/
 !/tools/sqlmap/
 !/tools/zap/
 !/tools/wkhtmltopdf/
+!/tools/nuclei/LICENSE*
+!/tools/sqlmap/LICENSE*
+!/tools/zap/LICENSE*
+!/tools/wkhtmltopdf/LICENSE*
 
 # Otros
 *.bak
