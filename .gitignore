@@ -30,6 +30,10 @@ reports/
 playwright-report/
 
 # Binarios y herramientas externas
+!/tools/nuclei/linux/README*
+!/tools/nuclei/windows/README*
+!/tools/nuclei/linux/LICENSE*
+!/tools/nuclei/windows/LICENSE*
 /tools/nuclei/*
 /tools/sqlmap/*
 /tools/zap/*
