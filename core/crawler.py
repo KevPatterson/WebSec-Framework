@@ -9,6 +9,22 @@ from urllib.parse import urljoin, urlparse
 from core.logger import get_logger
 
 class Crawler:
+        def _extract_js_endpoints(self, js_code, base_url):
+            """Extrae endpoints AJAX, rutas y parámetros de código JS."""
+            import re
+            endpoints = set()
+            # Buscar rutas tipo '/api/...' o '/ajax/...'
+            for match in re.findall(r'(["\'])(\/[^"\']{3,})\1', js_code):
+                url = urljoin(base_url, match[1])
+                endpoints.add(self._normalize_url(url))
+            # Buscar URLs absolutas
+            for match in re.findall(r'https?://[\w\.-]+(/[\w\./\-\?&%]*)', js_code):
+                endpoints.add(self._normalize_url(match[0]))
+            # Buscar parámetros AJAX (fetch, XMLHttpRequest, $.ajax)
+            for ajax in re.findall(r'(fetch|XMLHttpRequest|\.ajax)\s*\(.*?(["\'])([^"\']+)(["\'])', js_code):
+                url = urljoin(base_url, ajax[2])
+                endpoints.add(self._normalize_url(url))
+            return endpoints
     def __init__(self, target_url, config):
         self.target_url = target_url
         self.config = config
@@ -191,6 +207,16 @@ class Crawler:
                         links.add(self._normalize_url(sm_url))
             except Exception:
                 pass
+                                # Analizar JS externo
+                                try:
+                                    js_resp = requests.get(js_url, timeout=8, headers={"User-Agent": "Mozilla/5.0 WebSecCrawler"})
+                                    if js_resp.status_code == 200 and js_resp.text:
+                                        js_endpoints = self._extract_js_endpoints(js_resp.text, url)
+                                        for ep in js_endpoints:
+                                            links.add(ep)
+                                            self.logger.info(f"[JS externo] Endpoint descubierto: {ep}")
+                                except Exception as e:
+                                    self.logger.warning(f"Error analizando JS externo {js_url}: {e}")
         # Endpoints en comentarios HTML
         for comment in soup.find_all(string=lambda text: isinstance(text, type(soup.comment))):
             if "http" in comment:
@@ -200,6 +226,11 @@ class Crawler:
         # Endpoints en atributos data-* y onclick
         for tag in soup.find_all(True):
             for attr, val in tag.attrs.items():
+                                # Analizar JS embebido
+                                js_endpoints = self._extract_js_endpoints(script.string, url)
+                                for ep in js_endpoints:
+                                    links.add(ep)
+                                    self.logger.info(f"[JS embebido] Endpoint descubierto: {ep}")
                 if attr.startswith("data-") or attr in ("onclick", "onmouseover", "onload"):
                     if isinstance(val, str) and (val.startswith("/") or val.startswith("http")):
                         durl = urljoin(url, val)
