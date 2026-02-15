@@ -1,0 +1,2 @@
+# Esta carpeta almacena los templates de Nuclei
+# Se descargan automáticamente al ejecutar: python run.py --nuclei-update-templates

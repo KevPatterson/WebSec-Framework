@@ -32,24 +32,24 @@ reports/*
 playwright-report/
 
 # Binarios y herramientas externas
+# Ignorar binarios pero mantener estructura y documentación
+/tools/nuclei/linux/*
 !/tools/nuclei/linux/README*
-!/tools/nuclei/windows/README*
 !/tools/nuclei/linux/LICENSE*
+/tools/nuclei/windows/*
+!/tools/nuclei/windows/README*
 !/tools/nuclei/windows/LICENSE*
-/tools/nuclei/*
+/tools/nuclei-templates/*
+!/tools/nuclei-templates/.gitkeep
 /tools/sqlmap/*
-/tools/zap/*
-/tools/wkhtmltopdf/*
-!/tools/nuclei/
-!/tools/sqlmap/
-!/tools/zap/
-!/tools/wkhtmltopdf/
-!/tools/nuclei/LICENSE*
-!/tools/nuclei/linux/LICENSE.md
-!/tools/nuclei/windows/LICENSE.md
 !/tools/sqlmap/LICENSE*
+!/tools/sqlmap/.gitkeep
+/tools/zap/*
 !/tools/zap/LICENSE*
+!/tools/zap/.gitkeep
+/tools/wkhtmltopdf/*
 !/tools/wkhtmltopdf/LICENSE*
+!/tools/wkhtmltopdf/.gitkeep
 
 # Otros
 *.bak

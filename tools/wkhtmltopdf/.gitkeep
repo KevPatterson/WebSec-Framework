@@ -1,0 +1,4 @@
+# Esta carpeta almacena wkhtmltopdf para exportación a PDF
+# Descarga wkhtmltopdf desde: https://wkhtmltopdf.org/downloads.html
+# Windows: wkhtmltopdf.exe
+# Linux: wkhtmltopdf
