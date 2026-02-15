@@ -33,7 +33,19 @@
       margin-bottom: 18px;
       letter-spacing: 1px;
     }
-    svg { overflow: auto; background: #f7faff; border-radius: 12px; box-shadow: 0 2px 12px rgba(80,120,180,0.08); }
+    svg {
+      overflow: auto;
+      background: linear-gradient(135deg, #e3f2fd 0%, #f7faff 100%);
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(80,120,180,0.13);
+      border: 2px solid #b3d1ff;
+      padding: 24px;
+      margin: 0 auto;
+      display: block;
+      transition: box-shadow 0.3s, background 0.3s;
+      max-width: 100%;
+      height: auto;
+    }
     .node text { max-width: 500px; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; }
     .tooltip {
       font-family: 'Segoe UI', Arial, sans-serif;

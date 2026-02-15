@@ -84,7 +84,6 @@ Flujo de ejecución:
 Ejemplo de uso avanzado:
     python run.py https://example.com --nuclei --nuclei-severity high,critical --nuclei-tags xss,sqli --nuclei-cves CVE-2023-1234 --nuclei-categories exposures --nuclei-header "Authorization: Bearer TOKEN" --nuclei-cookie "sessionid=abc; csrftoken=xyz"
     python run.py --nuclei-url-list urls.txt --nuclei --nuclei-severity high
-"""
     print(help_text)
 
 def main():
@@ -101,6 +100,7 @@ def main():
     # Opciones avanzadas para Nuclei
     parser.add_argument("--nuclei-severity", help="Filtrar por severidad (critical,high,medium,low,info)")
     parser.add_argument("--nuclei-tags", help="Filtrar por tags (ej: xss,sqli)")
+     help_text = """
     parser.add_argument("--nuclei-cves", help="Filtrar por CVEs (ej: CVE-2023-1234,CVE-2022-5678)")
     parser.add_argument("--nuclei-categories", help="Filtrar por categorías (ej: exposures,misconfiguration)")
     parser.add_argument("--nuclei-url-list", help="Ruta a archivo de URLs para escaneo masivo con Nuclei")

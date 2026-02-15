@@ -27,6 +27,24 @@
 	python run.py
 	```
 3. Los resultados se guardarán en la carpeta `reports/` en formatos HTML, JSON, CSV y YAML.
+4. Para visualizar el árbol de crawling de forma interactiva:
+	- Ejecuta el crawling normalmente.
+	- Inicia el servidor Flask (`python app.py` o según instrucciones en run.py).
+	- Abre `templates/crawl_tree.html` en el navegador (servido por Flask).
+	- El árbol se muestra con nodos expandibles, tooltips, y estética moderna.
+## Visualización interactiva del árbol de crawling
+
+El archivo `templates/crawl_tree.html` permite visualizar el mapa del sitio descubierto de forma interactiva y profesional:
+- Nodos expandibles/colapsables.
+- Tooltips para URLs largas.
+- Ctrl+Click para abrir URLs.
+- Estética moderna (degradados, sombra, responsive).
+- Automatización vía Flask.
+
+Para usarlo:
+1. Ejecuta el crawling.
+2. Inicia el servidor Flask.
+3. Accede a la página de visualización.
 
 ## Payloads y plantillas
 
@@ -124,7 +142,7 @@ core/                   # Lógica principal y orquestación
 modules/                # Módulos de vulnerabilidad (XSS, SQLi, LFI, etc.)
 payloads/               # Payloads para pruebas de inyección
 reports/                # Resultados y reportes generados
-templates/              # Plantillas HTML para reportes
+templates/              # Plantillas HTML para reportes y visualización interactiva
 
 tools/                  # Binarios y recursos externos (Nuclei, sqlmap, ZAP, etc.)
 docs/                   # Documentación técnica y plan de desarrollo
@@ -191,7 +209,12 @@ Configura el objetivo y parámetros en `config/target.yaml`.
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)
 - [Requests](https://docs.python-requests.org/)
 
-Estas herramientas están integradas pero no desarrolladas por este proyecto. Consulta sus licencias y documentación oficial para más detalles.
+
+## Cambios recientes
+
+- Añadida visualización interactiva del árbol de crawling (`crawl_tree.html`).
+- Mejorada la estética general de la visualización (CSS, SVG, responsive).
+- Automatización del flujo de crawling y visualización.
 
 ## Licencia
 
