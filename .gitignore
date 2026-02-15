@@ -20,6 +20,8 @@ Thumbs.db
 
 # Reportes y resultados
 reports/*
+!reports/README.md
+!reports/.gitkeep
 
 # Archivos de configuración de usuario
 *.sublime-workspace
