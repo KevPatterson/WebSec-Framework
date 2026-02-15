@@ -314,13 +314,14 @@ def main():
         def run_scanner():
             nonlocal scanner
             scanner = Scanner(args.target, config)
-            scanner.register_module(XSSModule(config))
-            scanner.register_module(SQLiModule(config))
-            scanner.register_module(CSRFModule(config))
-            scanner.register_module(HeadersModule(config))
-            scanner.register_module(CORSModule(config))
-            scanner.register_module(AuthModule(config))
-            scanner.register_module(LFIModule(config))
+            # Los módulos ahora reciben el config actualizado del Scanner
+            scanner.register_module(HeadersModule(scanner.config))
+            scanner.register_module(XSSModule(scanner.config))
+            scanner.register_module(SQLiModule(scanner.config))
+            scanner.register_module(CSRFModule(scanner.config))
+            scanner.register_module(CORSModule(scanner.config))
+            scanner.register_module(AuthModule(scanner.config))
+            scanner.register_module(LFIModule(scanner.config))
             scanner.run()
             return scanner
             
@@ -345,7 +346,10 @@ def main():
         print(f"\n[+] Escaneo completado. Reportes guardados en: {report_dir}")
         print(f"    - Crawling: crawl_urls.json, crawl_forms.json, crawl_js_endpoints.json, crawl_tree.json")
         print(f"    - Fingerprinting: fingerprint.json")
-        print(f"    - Vulnerabilidades: vulnerability_report.html, vulnerability_report.json")
+        print(f"    - Security Headers: headers_findings.json")
+        print(f"    - XSS: xss_findings.json")
+        print(f"    - SQLi: sqli_findings.json")
+        print(f"    - Consolidado: vulnerability_scan_consolidated.json")
 
     # Ejemplo de integración avanzada con Nuclei
     if args.nuclei:

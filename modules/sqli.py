@@ -98,13 +98,13 @@ class SQLiModule(VulnerabilityModule):
         self.scan_timestamp = config.get("scan_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
         self.report_dir = config.get("report_dir", f"reports/scan_{self.scan_timestamp}")
         
-        # Cargar payloads desde archivo
-        self.payloads = self._load_payloads()
-        
-        # Configuración
+        # Configuración (ANTES de cargar payloads)
         self.timeout = config.get("timeout", 10)
         self.max_payloads = config.get("max_sqli_payloads", 15)
         self.use_sqlmap = config.get("use_sqlmap", False)  # Deshabilitado por defecto
+        
+        # Cargar payloads desde archivo (DESPUÉS de configurar max_payloads)
+        self.payloads = self._load_payloads()
         
         # SQLMap runner
         self.sqlmap_runner = None

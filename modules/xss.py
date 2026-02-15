@@ -58,12 +58,12 @@ class XSSModule(VulnerabilityModule):
         self.scan_timestamp = config.get("scan_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
         self.report_dir = config.get("report_dir", f"reports/scan_{self.scan_timestamp}")
         
-        # Cargar payloads desde archivo
-        self.payloads = self._load_payloads()
-        
-        # Configuración
+        # Configuración (ANTES de cargar payloads)
         self.timeout = config.get("timeout", 10)
         self.max_payloads = config.get("max_xss_payloads", 10)  # Limitar para eficiencia
+        
+        # Cargar payloads desde archivo (DESPUÉS de configurar max_payloads)
+        self.payloads = self._load_payloads()
 
     def _load_payloads(self):
         """Carga payloads desde archivo."""
