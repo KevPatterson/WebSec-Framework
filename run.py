@@ -2,6 +2,7 @@
 Orquestador principal del framework websec-framework.
 """
 import argparse
+import os
 from core.crawler import Crawler
 from core.fingerprint import Fingerprinter
 from core.scanner import Scanner
@@ -43,6 +44,8 @@ ARGUMENTOS:
 OPCIONES GENERALES:
     --config <ruta>       Ruta a archivo de configuracion YAML
                           (por defecto: config/target.yaml)
+    --export-pdf          Exportar reporte HTML a PDF automaticamente
+                          (requiere wkhtmltopdf instalado)
     --help, -h            Muestra esta ayuda extendida
 
 ================================================================================
@@ -100,6 +103,43 @@ El framework ejecuta automaticamente los siguientes modulos:
    - CSRF: Cross-Site Request Forgery
    - CORS: Analisis profundo de CORS
    - Auth: Autenticacion debil
+
+================================================================================
+REPORTES PROFESIONALES
+================================================================================
+
+El framework genera reportes HTML profesionales estilo Acunetix/Burp Suite:
+
+CARACTERISTICAS:
+   - Dashboard con score de riesgo (0-100)
+   - Cards de severidad (Critical, High, Medium, Low, Info)
+   - Graficos interactivos (Chart.js): Doughnut + Bar charts
+   - Tabla de vulnerabilidades filtrable por severidad
+   - Detalles expandibles con evidencia completa
+   - Timeline del escaneo
+   - Exportacion: Print/PDF, JSON download, Copy summary
+   - Diseno responsive con gradientes purple
+   - Navegacion por tabs (Dashboard, Vulnerabilidades, Timeline, Export)
+
+EXPORTACION A PDF:
+   El framework puede exportar automaticamente el reporte HTML a PDF usando
+   wkhtmltopdf. El PDF incluye TODO el contenido del reporte (no solo la
+   pestaña activa).
+
+   Uso:
+      python run.py https://example.com --export-pdf
+
+   Instalacion de wkhtmltopdf:
+      Windows: Descarga desde https://wkhtmltopdf.org/downloads.html
+               O copia wkhtmltopdf.exe a tools/wkhtmltopdf/
+      Linux:   sudo apt-get install wkhtmltopdf
+      macOS:   brew install wkhtmltopdf
+
+   El PDF generado incluye:
+   - Dashboard completo con graficos
+   - Todas las vulnerabilidades con detalles
+   - Timeline del escaneo
+   - Colores y estilos preservados
 
 ================================================================================
 INTEGRACION CON NUCLEI
@@ -168,6 +208,9 @@ EJEMPLOS DE USO
 Escaneo basico:
     python run.py https://example.com
 
+Escaneo con exportacion a PDF:
+    python run.py https://example.com --export-pdf
+
 Escaneo con Nuclei (severidad alta):
     python run.py https://example.com --nuclei --nuclei-severity high,critical
 
@@ -200,6 +243,8 @@ Archivos generados:
     - fingerprint.json             - Informacion tecnologica
     - headers_findings.json        - Hallazgos de security headers
     - vulnerability_scan_consolidated.json - Reporte consolidado
+    - vulnerability_report.html    - Reporte HTML profesional
+    - vulnerability_report.pdf     - Reporte PDF (si se usa --export-pdf)
 
 Visualizacion interactiva:
     1. Ejecuta: python app.py
@@ -216,7 +261,7 @@ NOTAS PROFESIONALES
 - El framework detecta y solicita elevacion de privilegios automaticamente
   si es necesario en Windows
 - Todos los formatos de salida soportan exportacion masiva y agrupacion avanzada
-- Para PDF necesitas instalar weasyprint: pip install weasyprint
+- Para exportar a PDF se requiere wkhtmltopdf (ver seccion REPORTES PROFESIONALES)
 
 ================================================================================
 DOCUMENTACION
@@ -241,6 +286,7 @@ def main():
     parser = argparse.ArgumentParser(description="WebSec Framework - Escaneo profesional de seguridad web", add_help=False)
     parser.add_argument("target", nargs='?', help="URL objetivo a analizar")
     parser.add_argument("--config", help="Ruta a archivo de configuración", default="config/target.yaml")
+    parser.add_argument("--export-pdf", action="store_true", help="Exportar reporte HTML a PDF (requiere wkhtmltopdf)")
     parser.add_argument("--nuclei", action="store_true", help="Ejecutar Nuclei sobre el objetivo")
     parser.add_argument("--nuclei-output-format", choices=["json", "yaml", "html", "pdf", "csv"], default="json", help="Formato de salida de Nuclei: json, yaml, html, pdf, csv")
     # Opciones avanzadas para Nuclei
@@ -276,6 +322,10 @@ def main():
 
     # Cargar configuración (placeholder)
     config = {}
+    
+    # Configurar exportación PDF si se solicita
+    if args.export_pdf:
+        config['export_pdf'] = True
 
     # Solo ejecutar crawling, fingerprinting y escaneo si hay un target específico
     if args.target:
@@ -318,10 +368,11 @@ def main():
             scanner.register_module(HeadersModule(scanner.config))
             scanner.register_module(XSSModule(scanner.config))
             scanner.register_module(SQLiModule(scanner.config))
-            scanner.register_module(CSRFModule(scanner.config))
-            scanner.register_module(CORSModule(scanner.config))
-            scanner.register_module(AuthModule(scanner.config))
-            scanner.register_module(LFIModule(scanner.config))
+            # Módulos en desarrollo (comentados hasta su implementación):
+            # scanner.register_module(CSRFModule(scanner.config))
+            # scanner.register_module(CORSModule(scanner.config))
+            # scanner.register_module(AuthModule(scanner.config))
+            # scanner.register_module(LFIModule(scanner.config))
             scanner.run()
             return scanner
             
@@ -349,7 +400,10 @@ def main():
         print(f"    - Security Headers: headers_findings.json")
         print(f"    - XSS: xss_findings.json")
         print(f"    - SQLi: sqli_findings.json")
-        print(f"    - Consolidado: vulnerability_scan_consolidated.json")
+        print(f"    - Consolidado JSON: vulnerability_scan_consolidated.json")
+        print(f"    - Reporte HTML: vulnerability_report.html")
+        print(f"\n[!] Abre el reporte HTML en tu navegador para ver el dashboard interactivo!")
+        print(f"    file:///{os.path.abspath(os.path.join(report_dir, 'vulnerability_report.html'))}")
 
     # Ejemplo de integración avanzada con Nuclei
     if args.nuclei:

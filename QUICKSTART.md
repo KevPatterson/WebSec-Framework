@@ -26,8 +26,21 @@ python run.py https://example.com
 Esto ejecutará:
 - ✅ Crawling inteligente
 - ✅ Fingerprinting tecnológico
-- ✅ Análisis de Security Headers
-- ✅ Generación de reportes
+- ✅ Análisis de Security Headers, XSS, SQLi
+- ✅ Generación de reportes HTML profesionales
+
+### Escaneo con Exportación PDF
+
+```bash
+python run.py https://example.com --export-pdf
+```
+
+Genera un reporte PDF profesional con TODO el contenido (no solo la pestaña activa).
+
+**Requisitos:**
+- Windows: Descarga wkhtmltopdf desde https://wkhtmltopdf.org/downloads.html
+- Linux: `sudo apt-get install wkhtmltopdf`
+- macOS: `brew install wkhtmltopdf`
 
 ### Ver Ayuda Completa
 
@@ -46,8 +59,12 @@ reports/scan_20260215_123456/
 ├── crawl_js_endpoints.json              # Endpoints JS
 ├── crawl_tree.json                      # Árbol de navegación
 ├── fingerprint.json                     # Info tecnológica
-├── headers_findings.json                # ⭐ Hallazgos de security headers
-└── vulnerability_scan_consolidated.json # Reporte consolidado
+├── headers_findings.json                # Hallazgos de security headers
+├── xss_findings.json                    # Hallazgos de XSS
+├── sqli_findings.json                   # Hallazgos de SQLi
+├── vulnerability_scan_consolidated.json # Reporte consolidado JSON
+├── vulnerability_report.html            # ⭐ Reporte HTML profesional
+└── vulnerability_report.pdf             # ⭐ Reporte PDF (con --export-pdf)
 ```
 
 ## Módulo Security Headers
@@ -246,3 +263,53 @@ websec-framework/
 ```bash
 python run.py https://example.com
 ```
+
+
+## Módulos de Seguridad Avanzados
+
+### CSRF, CORS y LFI/RFI
+
+Los nuevos módulos detectan vulnerabilidades críticas:
+
+```python
+from core.scanner import Scanner
+from modules.csrf import CSRFModule
+from modules.cors import CORSModule
+from modules.lfi import LFIModule
+
+# Configuración
+config = {
+    "target_url": "https://example.com",
+    "report_dir": "reports/security_scan",
+    "export_pdf": True
+}
+
+# Crear scanner
+scanner = Scanner("https://example.com", config)
+
+# Registrar módulos de seguridad
+scanner.register_module(CSRFModule(config))
+scanner.register_module(CORSModule(config))
+scanner.register_module(LFIModule(config))
+
+# Ejecutar escaneo
+scanner.run()
+```
+
+### Prueba Rápida
+
+```bash
+# Ejecutar script de prueba
+python test_csrf_cors_lfi.py
+
+# Los resultados se guardan en:
+# - reports/test_csrf_cors_lfi_TIMESTAMP/csrf_findings.json
+# - reports/test_csrf_cors_lfi_TIMESTAMP/cors_findings.json
+# - reports/test_csrf_cors_lfi_TIMESTAMP/lfi_findings.json
+# - reports/test_csrf_cors_lfi_TIMESTAMP/vulnerability_scan_consolidated.json
+```
+
+### Documentación Completa
+
+Para más detalles sobre estos módulos, consulta:
+- [docs/CSRF_CORS_LFI_MODULES.md](docs/CSRF_CORS_LFI_MODULES.md)

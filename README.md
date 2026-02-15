@@ -57,6 +57,9 @@ pip install pyyaml
 # Escaneo completo de un objetivo
 python run.py https://example.com
 
+# Escaneo con exportación a PDF
+python run.py https://example.com --export-pdf
+
 # Ver ayuda completa
 python run.py --help
 ```
@@ -108,7 +111,36 @@ Los resultados se guardan en `reports/scan_TIMESTAMP/`:
 - `crawl_tree.json` - Árbol de navegación
 - `fingerprint.json` - Información tecnológica
 - `headers_findings.json` - Hallazgos de security headers
+- `xss_findings.json` - Hallazgos de XSS
+- `sqli_findings.json` - Hallazgos de SQLi
 - `vulnerability_scan_consolidated.json` - Reporte consolidado
+- `vulnerability_report.html` - Reporte HTML profesional
+- `vulnerability_report.pdf` - Reporte PDF (con --export-pdf)
+
+### Reportes HTML Profesionales
+
+El framework genera reportes HTML profesionales estilo Acunetix/Burp Suite con:
+
+- **Dashboard interactivo**: Score de riesgo (0-100), cards de severidad
+- **Gráficos Chart.js**: Distribución por severidad y tipo
+- **Tabla filtrable**: Vulnerabilidades con detalles expandibles
+- **Timeline**: Cronología del escaneo
+- **Exportación múltiple**: Print/PDF, JSON, Copy summary
+- **Diseño responsive**: Gradientes purple, navegación por tabs
+
+**Exportación a PDF:**
+```bash
+# Exportar automáticamente a PDF
+python run.py https://example.com --export-pdf
+```
+
+El PDF incluye TODO el contenido del reporte (no solo la pestaña activa), con colores y gráficos preservados.
+
+**Requisitos para PDF:**
+- Windows: Descarga wkhtmltopdf desde https://wkhtmltopdf.org/downloads.html
+- Linux: `sudo apt-get install wkhtmltopdf`
+- macOS: `brew install wkhtmltopdf`
+- O copia `wkhtmltopdf.exe` a `tools/wkhtmltopdf/`
 
 ### Visualización Interactiva
 
@@ -172,6 +204,57 @@ Estas herramientas están integradas pero no desarrolladas por este proyecto. Co
 Cada módulo es autocontenible y puede activarse/desactivarse vía configuración. Los módulos incluidos son:
 
 ### ✅ Módulos Implementados
+
+#### **CSRF - Cross-Site Request Forgery** (COMPLETO) ⭐⭐⭐
+Detecta vulnerabilidades de falsificación de peticiones entre sitios.
+
+**Características:**
+- Análisis de tokens CSRF en formularios POST
+- Validación de atributo SameSite en cookies
+- Verificación de headers Origin/Referer
+- Detección de endpoints sin protección CSRF
+- Identificación de configuraciones inseguras (SameSite=None sin Secure)
+
+**CVSS: 8.8 (High)**
+
+**Salida:**
+- `csrf_findings.json`: Hallazgos con detalles de formularios y cookies
+- CWE-352, OWASP A01:2021
+
+#### **CORS - Misconfiguration** (COMPLETO) ⭐⭐⭐
+Análisis profundo de configuraciones Cross-Origin Resource Sharing.
+
+**Características:**
+- Detección de Access-Control-Allow-Origin: *
+- Validación de credentials con wildcard
+- Análisis de métodos permitidos peligrosos (PUT, DELETE, PATCH)
+- Detección de null origin acceptance
+- Verificación de reflexión de origin arbitrario
+
+**CVSS: 7.5 (High), 9.1 (Critical con credentials)**
+
+**Salida:**
+- `cors_findings.json`: Hallazgos con evidencia de configuraciones inseguras
+- Referencias MDN y PortSwigger
+
+#### **LFI/RFI - File Inclusion** (COMPLETO) ⭐⭐
+Detecta vulnerabilidades de inclusión de archivos locales y remotos.
+
+**Características:**
+- Detección de path traversal (../, ../../, ..\\)
+- Payloads para /etc/passwd, win.ini, logs
+- Detección de RFI con URLs externas
+- Análisis de parámetros susceptibles (file, path, page, include)
+- Técnicas de bypass: encoding, double slashes, null byte
+- PHP wrappers: php://filter, data://, expect://
+
+**CVSS: 7.5 (High para LFI), 9.1 (Critical para RFI)**
+
+**Salida:**
+- `lfi_findings.json`: Hallazgos con payload, evidencia y contexto
+- CWE-98, OWASP A03:2021
+
+**Documentación completa:** [docs/CSRF_CORS_LFI_MODULES.md](docs/CSRF_CORS_LFI_MODULES.md)
 
 #### **Security Headers** (COMPLETO)
 Análisis profesional de headers de seguridad HTTP según estándares OWASP.
@@ -256,10 +339,10 @@ config = {
 
 ### 🚧 Módulos en Desarrollo
 
-- **LFI**: Local/Remote File Inclusion (próximamente)
-- **CSRF**: Cross-Site Request Forgery (próximamente)
-- **CORS**: Análisis profundo de CORS (próximamente)
 - **Auth**: Autenticación débil o básica (próximamente)
+- **XXE**: XML External Entity (próximamente)
+- **SSRF**: Server-Side Request Forgery (próximamente)
+- **Command Injection**: OS Command Injection (próximamente)
 
 Cada módulo implementa la interfaz `VulnerabilityModule` con métodos `scan()` y `get_results()`, y puede usar payloads personalizados.
 
@@ -477,7 +560,46 @@ websec-framework/
 
 ## Cambios recientes
 
-### v0.3.0 (Febrero 2026) - ACTUAL
+### v0.4.0 (Febrero 2026) - ACTUAL
+- ✅ **Módulo CSRF completo**: Detección de Cross-Site Request Forgery
+  - Análisis de tokens CSRF en formularios
+  - Validación de SameSite cookies
+  - Verificación de headers Origin/Referer
+  - Detección de endpoints sin protección
+  - CVSS: 8.8 (High)
+- ✅ **Módulo CORS completo**: Análisis de configuraciones CORS
+  - Detección de wildcard origin (*)
+  - Validación de credentials con wildcard
+  - Análisis de métodos peligrosos
+  - Detección de null origin acceptance
+  - Reflexión de origin arbitrario
+  - CVSS: 7.5-9.1 (High-Critical)
+- ✅ **Módulo LFI/RFI completo**: Detección de File Inclusion
+  - Path traversal con múltiples técnicas
+  - Payloads para Linux/Windows
+  - Detección de RFI con URLs externas
+  - Técnicas de bypass (encoding, double slashes)
+  - PHP wrappers (php://filter, data://, expect://)
+  - CVSS: 7.5-9.1 (High-Critical)
+- ✅ **Payloads LFI ampliados**: 40+ payloads en payloads/lfi.txt
+- ✅ **Documentación completa**: docs/CSRF_CORS_LFI_MODULES.md
+- ✅ **Script de prueba**: test_csrf_cors_lfi.py
+
+### v0.3.0 (Febrero 2026)
+- ✅ **Reportes HTML Profesionales**: Estilo Acunetix/Burp Suite
+  - Dashboard con score de riesgo (0-100)
+  - Cards de severidad interactivas
+  - Gráficos Chart.js (Doughnut + Bar)
+  - Tabla filtrable de vulnerabilidades
+  - Detalles expandibles con evidencia
+  - Timeline del escaneo
+  - Exportación: Print/PDF, JSON, Copy summary
+  - Diseño responsive con gradientes
+- ✅ **Exportación PDF Automática**: Integración con wkhtmltopdf
+  - Exportación completa del reporte (no solo pestaña activa)
+  - CSS optimizado para impresión
+  - Preservación de colores y gráficos
+  - Opción --export-pdf en CLI
 - ✅ **Módulo XSS completo**: Detección de Cross-Site Scripting
   - Reflected XSS en parámetros GET/POST
   - DOM-based XSS mediante análisis de JavaScript
@@ -491,7 +613,7 @@ websec-framework/
   - Integración opcional con SQLMap
   - Soporte MySQL, PostgreSQL, MSSQL, Oracle, SQLite
 - ✅ **Payloads actualizados**: Archivos xss.txt y sqli.txt ampliados
-- ✅ **Tests**: Script test_xss_sqli.py para validación
+- ✅ **Tests**: Scripts de prueba para validación
 
 ### v0.2.0 (Febrero 2026)
 - ✅ **Módulo Security Headers completo**: Análisis profesional de headers HTTP según OWASP

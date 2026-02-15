@@ -89,11 +89,33 @@ class Scanner:
                 "all_findings": self.all_findings
             }
             
+            # Exportar JSON
             output_path = os.path.join(self.report_dir, "vulnerability_scan_consolidated.json")
             with open(output_path, "w", encoding="utf-8") as f:
                 json.dump(consolidated, f, indent=2, ensure_ascii=False)
             
-            self.logger.info(f"Reporte consolidado exportado en: {output_path}")
+            self.logger.info(f"Reporte consolidado JSON exportado en: {output_path}")
+            
+            # Generar reporte HTML profesional
+            try:
+                from core.html_reporter import HTMLReporter
+                html_reporter = HTMLReporter(self.config)
+                html_path = os.path.join(self.report_dir, "vulnerability_report.html")
+                
+                # Verificar si se debe exportar a PDF
+                export_pdf = self.config.get("export_pdf", False)
+                
+                if html_reporter.generate(consolidated, html_path, export_pdf=export_pdf):
+                    self.logger.info(f"Reporte HTML profesional generado en: {html_path}")
+                    
+                    if export_pdf:
+                        pdf_path = html_path.replace('.html', '.pdf')
+                        if os.path.exists(pdf_path):
+                            self.logger.info(f"Reporte PDF generado en: {pdf_path}")
+                else:
+                    self.logger.warning("No se pudo generar el reporte HTML")
+            except Exception as e:
+                self.logger.error(f"Error generando reporte HTML: {e}")
             
         except Exception as e:
             self.logger.error(f"Error al exportar reporte consolidado: {e}")

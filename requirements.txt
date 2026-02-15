@@ -1,6 +1,3 @@
-# Para exportar reportes en PDF
-weasyprint>=60.0
-# CSV es estándar en Python (no requiere instalación)
 # Dependencias principales para WebSec Framework
 requests>=2.31.0
 beautifulsoup4>=4.12.0
@@ -12,3 +9,8 @@ pyyaml>=6.0
 # Recomendadas para desarrollo/profesional
 # playwright>=1.40.0   # Crawling JS dinámico (opcional)
 # pytest>=7.4.0        # Testing
+
+# Nota: Para exportar reportes a PDF, instalar wkhtmltopdf:
+# Windows: https://wkhtmltopdf.org/downloads.html
+# Linux: sudo apt-get install wkhtmltopdf
+# macOS: brew install wkhtmltopdf
