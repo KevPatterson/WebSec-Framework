@@ -19,6 +19,7 @@ class Crawler:
         self.exported = False
         self.use_js_crawling = bool(config.get("js_crawling", False))
         self.js_browser = config.get("js_browser", "auto").lower()  # auto|chrome|firefox|edge|chromium
+        self.crawl_tree = {}  # Estructura árbol: {url: [hijos]}
 
     def run(self):
         """Ejecuta el crawling sobre el objetivo, exprimiendo recursos avanzados."""
@@ -35,10 +36,11 @@ class Crawler:
         seeds.update([robots_url, sitemap_url, manifest_url, sw_url])
         # Crawling concurrente
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as executor:
-            futures = {executor.submit(self._crawl, url): url for url in seeds}
+            futures = {executor.submit(self._crawl, url, 0, 2, None): url for url in seeds}
             concurrent.futures.wait(futures)
         self.logger.info(f"Crawling finalizado. URLs encontradas: {len(self.found_urls)}. Formularios: {len(self.forms)}")
         self.export_results()
+        self.export_tree_visual()
 
     def _normalize_url(self, url):
         # Normaliza la URL: sin fragmentos, parámetros ordenados
@@ -51,13 +53,20 @@ class Crawler:
         # Detecta si la URL es de paginación
         return any(x in url.lower() for x in ["page=", "/page/", "/next", "?p="])
 
-    def _crawl(self, url, depth=0, max_depth=2):
+    def _crawl(self, url, depth=0, max_depth=2, parent=None):
         if depth > max_depth:
             return
         norm_url = self._normalize_url(url)
         if norm_url in self.visited:
             return
         self.visited.add(norm_url)
+        # Registrar relación padre-hijo
+        if parent:
+            hijos = self.crawl_tree.setdefault(parent, [])
+            if norm_url not in hijos:
+                hijos.append(norm_url)
+        else:
+            self.crawl_tree.setdefault(norm_url, [])
         # Soporte opcional para crawling JS dinámico
         soup = None
         resp = None
@@ -211,11 +220,18 @@ class Crawler:
         with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
             for l in links:
                 if l not in self.visited:
-                    executor.submit(self._crawl, l, depth+1, max_depth)
+                    executor.submit(self._crawl, l, depth+1, max_depth, norm_url)
             # Si hay paginación, seguir solo una rama para evitar loops infinitos
             for p in paginated:
                 if p not in self.visited:
-                    self._crawl(p, depth+1, max_depth)
+                    self._crawl(p, depth+1, max_depth, norm_url)
+    def export_tree_visual(self):
+        """Exporta el árbol de crawling en formato JSON."""
+        import os, json
+        os.makedirs("reports", exist_ok=True)
+        with open("reports/crawl_tree.json", "w", encoding="utf-8") as f:
+            json.dump(self.crawl_tree, f, indent=2, ensure_ascii=False)
+        self.logger.info("Árbol de crawling exportado en reports/crawl_tree.json")
 
     def export_results(self):
         """Exporta los resultados del crawling a JSON, CSV y YAML."""

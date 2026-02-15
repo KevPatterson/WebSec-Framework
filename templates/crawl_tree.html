@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Visualización árbol crawling</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    .node circle.expandable { fill: #2176c1; cursor: pointer; }
+    .node circle.leaf { fill: #6baed6; cursor: pointer; }
+    .node text { font: 12px sans-serif; pointer-events: none; }
+    .link { fill: none; stroke: #aaa; stroke-width: 2px; }
+    .node:hover circle { stroke: #333; stroke-width: 2px; }
+    svg { overflow: auto; }
+  </style>
+</head>
+<body>
+  <svg width="1200" height="800"></svg>
+  <script>
+    // Cargar crawl_tree.json automáticamente
+    fetch('../reports/crawl_tree.json')
+      .then(response => response.json())
+      .then(crawlTree => {
+        // Construir un superárbol artificial con todos los nodos principales
+        function buildTreeAll(crawlTree) {
+          function recurse(node) {
+            return {
+              name: node,
+              children: (crawlTree[node] || []).map(recurse)
+            };
+          }
+          // Todos los nodos principales
+          const roots = Object.keys(crawlTree);
+          return {
+            name: 'Sitio',
+            children: roots.map(recurse)
+          };
+        }
+        const data = buildTreeAll(crawlTree);
+        const svg = d3.select('svg'),
+              width = +svg.attr('width'),
+              height = +svg.attr('height');
+        const treeLayout = d3.tree().size([height, width - 160]);
+        let root = d3.hierarchy(data);
+        treeLayout(root);
+
+        // Función para actualizar el árbol (expandir/colapsar)
+        function update(source) {
+          // Limpiar SVG
+          svg.selectAll('*').remove();
+          treeLayout(root);
+          // Dibuja enlaces
+          svg.selectAll('.link')
+            .data(root.links())
+            .enter().append('path')
+            .attr('class', 'link')
+            .attr('d', d3.linkHorizontal()
+              .x(d => d.y)
+              .y(d => d.x));
+          // Dibuja nodos
+          const node = svg.selectAll('.node')
+            .data(root.descendants())
+            .enter().append('g')
+            .attr('class', 'node')
+            .attr('transform', d => `translate(${d.y},${d.x})`);
+          node.append('circle')
+            .attr('r', 8)
+            .attr('class', d => (d.children || d._children) ? 'expandable' : 'leaf')
+            .on('click', function(event, d) {
+              if (d.children) {
+                d._children = d.children;
+                d.children = null;
+              } else if (d._children) {
+                d.children = d._children;
+                d._children = null;
+              }
+              update(d);
+            });
+          node.append('text')
+            .attr('dy', 3)
+            .attr('x', d => d.children || d._children ? -12 : 12)
+            .style('text-anchor', d => d.children || d._children ? 'end' : 'start')
+            .text(d => d.data.name);
+        }
+        // Inicialmente colapsar todos los nodos excepto el primer nivel
+        root.children.forEach(collapse);
+        update(root);
+
+        function collapse(d) {
+          if (d.children) {
+            d.children.forEach(collapse);
+            d._children = d.children;
+            d.children = null;
+          }
+        }
+      })
+      .catch(err => {
+        document.body.insertAdjacentHTML('beforeend', '<p style="color:red">No se pudo cargar crawl_tree.json: ' + err + '</p>');
+      });
+  </script>
+</body>
+</html>

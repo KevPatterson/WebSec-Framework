@@ -336,3 +336,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Despliegue automático del servidor Flask para visualización
+    print("\n[INFO] Puedes visualizar el árbol de crawling ejecutando:")
+    print("    python app.py")
+    print("Luego abre http://localhost:5000/crawl_tree en tu navegador.")

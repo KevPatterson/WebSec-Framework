@@ -19,7 +19,7 @@ ENV/
 Thumbs.db
 
 # Reportes y resultados
-reports/
+reports/*
 
 # Archivos de configuración de usuario
 *.sublime-workspace
