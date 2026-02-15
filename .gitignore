@@ -30,10 +30,14 @@ reports/
 playwright-report/
 
 # Binarios y herramientas externas
-/tools/nuclei/
-/tools/sqlmap/
-/tools/zap/
-/tools/wkhtmltopdf/
+/tools/nuclei/*
+/tools/sqlmap/*
+/tools/zap/*
+/tools/wkhtmltopdf/*
+!/tools/nuclei/
+!/tools/sqlmap/
+!/tools/zap/
+!/tools/wkhtmltopdf/
 
 # Otros
 *.bak
