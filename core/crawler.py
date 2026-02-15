@@ -38,6 +38,10 @@ class Crawler:
         self.use_js_crawling = bool(config.get("js_crawling", False))
         self.js_browser = config.get("js_browser", "auto").lower()  # auto|chrome|firefox|edge|chromium
         self.crawl_tree = {}  # Estructura árbol: {url: [hijos]}
+        # Crear carpeta de reporte con timestamp
+        from datetime import datetime
+        self.scan_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.report_dir = f"reports/scan_{self.scan_timestamp}"
 
     def run(self):
         """Ejecuta el crawling sobre el objetivo, exprimiendo recursos avanzados."""
@@ -269,10 +273,11 @@ class Crawler:
     def export_tree_visual(self):
         """Exporta el árbol de crawling en formato JSON."""
         import os, json
-        os.makedirs("reports", exist_ok=True)
-        with open("reports/crawl_tree.json", "w", encoding="utf-8") as f:
+        os.makedirs(self.report_dir, exist_ok=True)
+        tree_path = os.path.join(self.report_dir, "crawl_tree.json")
+        with open(tree_path, "w", encoding="utf-8") as f:
             json.dump(self.crawl_tree, f, indent=2, ensure_ascii=False)
-        self.logger.info("Árbol de crawling exportado en reports/crawl_tree.json")
+        self.logger.info(f"Árbol de crawling exportado en {tree_path}")
 
     def export_results(self):
         """Exporta los resultados del crawling a JSON, CSV y YAML."""
@@ -281,42 +286,45 @@ class Crawler:
         import os, json
         import csv
         try:
-            os.makedirs("reports", exist_ok=True)
-            from datetime import datetime
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            os.makedirs(self.report_dir, exist_ok=True)
+            
             # Exportar URLs
-            with open(f"reports/crawl_urls_{timestamp}.json", "w", encoding="utf-8") as f:
+            with open(os.path.join(self.report_dir, "crawl_urls.json"), "w", encoding="utf-8") as f:
                 json.dump(sorted(self.found_urls), f, indent=2, ensure_ascii=False)
-            with open(f"reports/crawl_urls_{timestamp}.csv", "w", encoding="utf-8", newline="") as f:
+            with open(os.path.join(self.report_dir, "crawl_urls.csv"), "w", encoding="utf-8", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(["url"])
                 for u in sorted(self.found_urls):
                     writer.writerow([u])
+            
             # Exportar formularios
-            with open(f"reports/crawl_forms_{timestamp}.json", "w", encoding="utf-8") as f:
+            with open(os.path.join(self.report_dir, "crawl_forms.json"), "w", encoding="utf-8") as f:
                 json.dump(self.forms, f, indent=2, ensure_ascii=False)
+            
             # Exportar endpoints JS
-            with open(f"reports/crawl_js_endpoints_{timestamp}.json", "w", encoding="utf-8") as f:
+            with open(os.path.join(self.report_dir, "crawl_js_endpoints.json"), "w", encoding="utf-8") as f:
                 json.dump(sorted(self.js_endpoints), f, indent=2, ensure_ascii=False)
-            with open(f"reports/crawl_js_endpoints_{timestamp}.csv", "w", encoding="utf-8", newline="") as f:
+            with open(os.path.join(self.report_dir, "crawl_js_endpoints.csv"), "w", encoding="utf-8", newline="") as f:
                 writer = csv.writer(f)
                 writer.writerow(["endpoint_js"])
                 for ep in sorted(self.js_endpoints):
                     writer.writerow([ep])
+            
             # Exportar YAML si está disponible
             try:
                 import yaml
-                with open(f"reports/crawl_urls_{timestamp}.yaml", "w", encoding="utf-8") as f:
+                with open(os.path.join(self.report_dir, "crawl_urls.yaml"), "w", encoding="utf-8") as f:
                     yaml.dump(sorted(self.found_urls), f, allow_unicode=True)
-                with open(f"reports/crawl_forms_{timestamp}.yaml", "w", encoding="utf-8") as f:
+                with open(os.path.join(self.report_dir, "crawl_forms.yaml"), "w", encoding="utf-8") as f:
                     yaml.dump(self.forms, f, allow_unicode=True)
-                with open(f"reports/crawl_js_endpoints_{timestamp}.yaml", "w", encoding="utf-8") as f:
+                with open(os.path.join(self.report_dir, "crawl_js_endpoints.yaml"), "w", encoding="utf-8") as f:
                     yaml.dump(sorted(self.js_endpoints), f, allow_unicode=True)
             except ImportError:
                 self.logger.warning("pyyaml no está instalado, no se exporta YAML.")
             except Exception as e:
                 self.logger.warning(f"Error exportando YAML: {e}")
-            self.logger.info("Resultados del crawling exportados en reports/crawl_urls.(json|csv|yaml) y crawl_forms.(json|yaml)")
+            
+            self.logger.info(f"Resultados del crawling exportados en {self.report_dir}/")
             self.exported = True
         except Exception as e:
             self.logger.error(f"Error al exportar resultados de crawling: {e}")

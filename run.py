@@ -22,6 +22,7 @@ from core.external.nuclei_runner import NucleiRunner
 
 
 def print_help():
+    help_text = """
 WebSec Framework - Escaneo profesional de seguridad web
 
 Uso:
@@ -47,8 +48,8 @@ Integración de herramientas externas:
     --nuclei-rate-limit <n>      Limitar requests por segundo (ej: 10)
     --nuclei-proxy <url>         Usar proxy HTTP/SOCKS (ej: http://127.0.0.1:8080)
     --nuclei-threads <n>         Número de hilos/concurrencia para escaneo masivo (ej: 4, 10, 50)
-        --nuclei-url-list <archivo>  Escanea una lista de URLs (una por línea) de forma concurrente y profesional
 
+    Ejecución concurrente:
         - El framework ejecuta crawling, fingerprinting y escaneo de vulnerabilidades en paralelo para máxima eficiencia.
         - El escaneo con Nuclei sobre múltiples URLs se realiza en paralelo usando --nuclei-threads para controlar el número de hilos.
         - Ejemplo: python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
@@ -82,9 +83,8 @@ Flujo de ejecución:
 Ejemplo de uso avanzado:
     python run.py https://example.com --nuclei --nuclei-severity high,critical --nuclei-tags xss,sqli --nuclei-cves CVE-2023-1234 --nuclei-categories exposures --nuclei-header "Authorization: Bearer TOKEN" --nuclei-cookie "sessionid=abc; csrftoken=xyz"
     python run.py --nuclei-url-list urls.txt --nuclei --nuclei-severity high
-
 """
-     print(help_text)
+    print(help_text)
 def main():
     import sys
     if '--help' in sys.argv or '-h' in sys.argv:
@@ -110,8 +110,6 @@ def main():
     parser.add_argument("--nuclei-templates", help="Ruta a templates personalizados de Nuclei")
     parser.add_argument("--nuclei-update-templates", action="store_true", help="Actualiza los templates de Nuclei automáticamente")
     parser.add_argument("--nuclei-output", help="Guardar salida JSON de Nuclei en archivo")
-"""
-     print(help_text)
 
     args = parser.parse_args()
 
@@ -125,50 +123,82 @@ def main():
             print("Error actualizando templates de Nuclei. Revisa el log.")
         return
 
-    args = parser.parse_args()
-
-    if not args.target:
+    if not args.target and not args.nuclei_url_list:
         print_help()
         return
 
     # Cargar configuración (placeholder)
     config = {}
 
-    # Ejecución concurrente de crawling, fingerprinting y escaneo
-    import concurrent.futures
-    def run_crawler():
-        crawler = Crawler(args.target, config)
-        crawler.run()
-    def run_finger():
-        finger = Fingerprinter(args.target, config)
-        finger.run()
-    def run_scanner():
-        scanner = Scanner(args.target, config)
-        scanner.register_module(XSSModule(config))
-        scanner.register_module(SQLiModule(config))
-        scanner.register_module(CSRFModule(config))
-        scanner.register_module(HeadersModule(config))
-        scanner.register_module(CORSModule(config))
-        scanner.register_module(AuthModule(config))
-        scanner.register_module(LFIModule(config))
-        scanner.run()
-    # Control de threads: máximo 3 tareas concurrentes (crawling, fingerprint, escaneo)
-    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-        futures = [
-            executor.submit(run_crawler),
-            executor.submit(run_finger),
-            executor.submit(run_scanner)
-        ]
-        concurrent.futures.wait(futures)
+    # Solo ejecutar crawling, fingerprinting y escaneo si hay un target específico
+    if args.target:
+        # Crear timestamp compartido para todos los módulos
+        from datetime import datetime
+        scan_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_dir = f"reports/scan_{scan_timestamp}"
+        
+        # Compartir timestamp y directorio en config
+        config['scan_timestamp'] = scan_timestamp
+        config['report_dir'] = report_dir
+        
+        # Ejecución concurrente de crawling, fingerprinting y escaneo
+        import concurrent.futures
+        
+        crawler = None
+        fingerprinter = None
+        scanner = None
+        
+        def run_crawler():
+            nonlocal crawler
+            crawler = Crawler(args.target, config)
+            crawler.scan_timestamp = scan_timestamp
+            crawler.report_dir = report_dir
+            crawler.run()
+            return crawler
+            
+        def run_finger():
+            nonlocal fingerprinter
+            fingerprinter = Fingerprinter(args.target, config)
+            fingerprinter.scan_timestamp = scan_timestamp
+            fingerprinter.report_dir = report_dir
+            fingerprinter.run()
+            return fingerprinter
+            
+        def run_scanner():
+            nonlocal scanner
+            scanner = Scanner(args.target, config)
+            scanner.register_module(XSSModule(config))
+            scanner.register_module(SQLiModule(config))
+            scanner.register_module(CSRFModule(config))
+            scanner.register_module(HeadersModule(config))
+            scanner.register_module(CORSModule(config))
+            scanner.register_module(AuthModule(config))
+            scanner.register_module(LFIModule(config))
+            scanner.run()
+            return scanner
+            
+        # Control de threads: máximo 3 tareas concurrentes (crawling, fingerprint, escaneo)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+            futures = [
+                executor.submit(run_crawler),
+                executor.submit(run_finger),
+                executor.submit(run_scanner)
+            ]
+            concurrent.futures.wait(futures)
 
-    # Fase 4: Validación de falsos positivos (placeholder)
-    validator = Validator(config)
-    # for finding in scanner.findings:
-    #     validator.validate(finding)
+        # Fase 4: Validación de falsos positivos (placeholder)
+        validator = Validator(config)
+        # for finding in scanner.findings:
+        #     validator.validate(finding)
 
-    # Fase 5: Reporte
-    reporter = Reporter(config)
-    # reporter.generate(scanner.findings)
+        # Fase 5: Reporte
+        reporter = Reporter(config)
+        # reporter.generate(scanner.findings, output_dir=report_dir, target_url=args.target, scan_timestamp=scan_timestamp)
+        
+        print(f"\n[+] Escaneo completado. Reportes guardados en: {report_dir}")
+        print(f"    - Crawling: crawl_urls.json, crawl_forms.json, crawl_js_endpoints.json, crawl_tree.json")
+        print(f"    - Fingerprinting: fingerprint.json")
+        print(f"    - Vulnerabilidades: vulnerability_report.html, vulnerability_report.json")
 
     # Ejemplo de integración avanzada con Nuclei
     if args.nuclei:
@@ -191,70 +221,77 @@ def main():
         else:
             urls = [args.target]
         max_threads = args.nuclei_threads if args.nuclei_threads else 4
-        help_text = """
-    WebSec Framework - Escaneo profesional de seguridad web
-
-    Uso:
-        python run.py <target> [opciones]
-        python run.py --nuclei-url-list <archivo_urls> [opciones]
-
-    Argumentos:
-        target                URL objetivo a analizar (ej: https://example.com)
-
-    Opciones generales:
-        --config <ruta>       Ruta a archivo de configuración YAML (por defecto: config/target.yaml)
-        --help                Muestra esta ayuda extendida
-
-    Integración de herramientas externas:
-        --nuclei              Orquesta Nuclei (plantillas CVE, resultados JSON)
-        --nuclei-url-list <archivo>  Escanea una lista de URLs (una por línea)
-        --nuclei-severity     Filtrar por severidad (critical,high,medium,low,info)
-        --nuclei-tags         Filtrar por tags (ej: xss,sqli)
-        --nuclei-cves         Filtrar por CVEs (ej: CVE-2023-1234,CVE-2022-5678)
-        --nuclei-categories   Filtrar por categorías (ej: exposures,misconfiguration)
-        --nuclei-header <header>     Añadir header personalizado (puede usarse varias veces)
-        --nuclei-cookie <cookie>     Añadir cookies (formato: "key1=val1; key2=val2")
-        --nuclei-rate-limit <n>      Limitar requests por segundo (ej: 10)
-        --nuclei-proxy <url>         Usar proxy HTTP/SOCKS (ej: http://127.0.0.1:8080)
-        --nuclei-threads <n>         Número de hilos/concurrencia para escaneo masivo (ej: 4, 10, 50)
-            --nuclei-url-list <archivo>  Escanea una lista de URLs (una por línea) de forma concurrente y profesional
-
-        Ejecución concurrente:
-            - El framework ejecuta crawling, fingerprinting y escaneo de vulnerabilidades en paralelo para máxima eficiencia.
-            - El escaneo con Nuclei sobre múltiples URLs se realiza en paralelo usando --nuclei-threads para controlar el número de hilos.
-            - Ejemplo: python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
-
-        Notas profesionales:
-            - El binario portable de wkhtmltopdf debe estar en tools/wkhtmltopdf/ para exportar a PDF sin instalación.
-            - El framework detecta y solicita elevación de privilegios automáticamente si es necesario en Windows.
-            - Todos los formatos de salida soportan exportación masiva y agrupación avanzada.
-        --nuclei-templates <ruta>    Ruta a templates personalizados de Nuclei
-        --nuclei-update-templates    Actualiza los templates de Nuclei automáticamente
-        --nuclei-output <archivo>    Guardar salida de Nuclei en archivo (JSON, YAML, HTML, PDF, CSV)
-        --nuclei-output-format <fmt> Formato de salida: json, yaml, html, pdf, csv (por defecto: json)
-
-    Ejemplos de exportación:
-        python run.py <target> --nuclei --nuclei-output report.json --nuclei-output-format json
-        python run.py <target> --nuclei --nuclei-output report.yaml --nuclei-output-format yaml
-        python run.py <target> --nuclei --nuclei-output report.html --nuclei-output-format html
-        python run.py <target> --nuclei --nuclei-output report.pdf --nuclei-output-format pdf
-        python run.py <target> --nuclei --nuclei-output report.csv --nuclei-output-format csv
-
-    Para PDF necesitas instalar weasyprint: pip install weasyprint
-        (Próximamente: sqlmap, ZAP)
-
-    Flujo de ejecución:
-        1. Descubrimiento y crawling inteligente
-        2. Fingerprinting tecnológico
-        3. Escaneo automatizado de vulnerabilidades (XSS, SQLi, CSRF, headers, CORS, auth, LFI)
-        4. Validación de falsos positivos
-        5. Generación de reportes profesionales (HTML/JSON)
-
-    Ejemplo de uso avanzado:
-        python run.py https://example.com --nuclei --nuclei-severity high,critical --nuclei-tags xss,sqli --nuclei-cves CVE-2023-1234 --nuclei-categories exposures --nuclei-header "Authorization: Bearer TOKEN" --nuclei-cookie "sessionid=abc; csrftoken=xyz"
-        python run.py --nuclei-url-list urls.txt --nuclei --nuclei-severity high
-    """
-        print(help_text)
+        
+        def scan_url(url):
+            return nuclei.run(
+                target=url,
+                severity=severity,
+                tags=tags,
+                cves=cves,
+                categories=categories,
+                headers=headers,
+                cookies=cookies,
+                rate_limit=args.nuclei_rate_limit,
+                proxy=args.nuclei_proxy,
+                templates_path=args.nuclei_templates
+            )
+        
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_threads) as executor:
+            futures = [executor.submit(scan_url, url) for url in urls]
+            for future in concurrent.futures.as_completed(futures):
+                try:
+                    findings = future.result()
+                    if findings:
+                        nuclei_findings.extend(findings)
+                except Exception as e:
+                    print(f"[!] Error en escaneo de URL: {e}")
+        
+        # Guardar resultados si se especificó output
+        if args.nuclei_output:
+            import os
+            import json
+            import tempfile
+            from jinja2 import Template
+            
+            fmt = args.nuclei_output_format
+            try:
+                if fmt == 'json':
+                    with open(args.nuclei_output, 'w', encoding='utf-8') as f:
+                        json.dump(nuclei_findings, f, indent=2, ensure_ascii=False)
+                elif fmt == 'yaml':
+                    import yaml
+                    with open(args.nuclei_output, 'w', encoding='utf-8') as f:
+                        yaml.dump(nuclei_findings, f, allow_unicode=True, default_flow_style=False)
+                elif fmt == 'csv':
+                    import csv
+                    with open(args.nuclei_output, 'w', newline='', encoding='utf-8') as f:
+                        if nuclei_findings:
+                            fieldnames = ['name', 'severity', 'template', 'tags', 'matched-at']
+                            writer = csv.DictWriter(f, fieldnames=fieldnames)
+                            writer.writeheader()
+                            for finding in nuclei_findings:
+                                info = finding.get('info', {})
+                                writer.writerow({
+                                    'name': info.get('name', '-'),
+                                    'severity': info.get('severity', '-'),
+                                    'template': finding.get('template', '-'),
+                                    'tags': ','.join(info.get('tags', [])),
+                                    'matched-at': finding.get('matched-at', '-')
+                                })
+                elif fmt == 'html':
+                    template_path = os.path.join(os.path.dirname(__file__), 'templates', 'nuclei_report.html')
+                    with open(template_path, 'r', encoding='utf-8') as tplf:
+                        html_template = tplf.read()
+                    from collections import defaultdict
+                    grouped = defaultdict(list)
+                    for f in nuclei_findings:
+                        sev = f.get('info', {}).get('severity', 'unknown').lower()
+                        grouped[sev].append(f)
+                    t = Template(html_template)
+                    html = t.render(grouped=grouped)
+                    with open(args.nuclei_output, 'w', encoding='utf-8') as f:
+                        f.write(html)
+                elif fmt == 'pdf':
                     import sys
                     template_path = os.path.join(os.path.dirname(__file__), 'templates', 'nuclei_report.html')
                     with open(template_path, 'r', encoding='utf-8') as tplf:

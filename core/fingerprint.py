@@ -13,6 +13,10 @@ class Fingerprinter:
         self.config = config
         self.logger = get_logger("fingerprint")
         self.results = {}
+        # Crear carpeta de reporte con timestamp
+        from datetime import datetime
+        self.scan_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.report_dir = f"reports/scan_{self.scan_timestamp}"
 
     def run(self):
         """Realiza fingerprinting sobre el objetivo."""
@@ -28,8 +32,23 @@ class Fingerprinter:
             self.logger.info(f"Servidor: {self.results['server']}, X-Powered-By: {self.results['powered_by']}")
             if self.results["waf"]:
                 self.logger.warning(f"Posible WAF detectado: {self.results['waf']}")
+            
+            # Exportar resultados de fingerprinting
+            self._export_results()
         except Exception as e:
             self.logger.error(f"Error en fingerprinting: {e}")
+    
+    def _export_results(self):
+        """Exporta los resultados del fingerprinting a JSON."""
+        import os, json
+        try:
+            os.makedirs(self.report_dir, exist_ok=True)
+            fingerprint_path = os.path.join(self.report_dir, "fingerprint.json")
+            with open(fingerprint_path, "w", encoding="utf-8") as f:
+                json.dump(self.results, f, indent=2, ensure_ascii=False)
+            self.logger.info(f"Resultados de fingerprinting exportados en {fingerprint_path}")
+        except Exception as e:
+            self.logger.error(f"Error al exportar resultados de fingerprinting: {e}")
 
     def _detect_waf(self, resp):
         # Detección básica de WAF por headers comunes

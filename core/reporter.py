@@ -18,19 +18,25 @@ class Reporter:
             autoescape=select_autoescape(['html', 'xml'])
         )
 
-    def generate(self, findings, output_dir="reports", target_url=None):
+    def generate(self, findings, output_dir=None, target_url=None, scan_timestamp=None):
         """Genera un reporte profesional en HTML y JSON."""
         if not findings:
             self.logger.warning("No hay hallazgos para reportar.")
             return
+        
+        # Si no se proporciona output_dir, crear uno con timestamp
+        if output_dir is None:
+            if scan_timestamp is None:
+                scan_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_dir = f"reports/scan_{scan_timestamp}"
+        
         os.makedirs(output_dir, exist_ok=True)
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base = f"report_{timestamp}"
+        
         # HTML
-        html_path = os.path.join(output_dir, base + ".html")
+        html_path = os.path.join(output_dir, "vulnerability_report.html")
         self._generate_html(findings, html_path, target_url)
         # JSON
-        json_path = os.path.join(output_dir, base + ".json")
+        json_path = os.path.join(output_dir, "vulnerability_report.json")
         with open(json_path, "w", encoding="utf-8") as f:
             json.dump(findings, f, indent=2, ensure_ascii=False)
         self.logger.info(f"Reporte generado: {html_path} y {json_path}")
