@@ -39,8 +39,8 @@ playwright-report/
 !/tools/zap/
 !/tools/wkhtmltopdf/
 !/tools/nuclei/LICENSE*
-!/tools/nuclei/linux/LICENSE*
-!/tools/nuclei/windows/LICENSE*
+!/tools/nuclei/linux/LICENSE.md
+!/tools/nuclei/windows/LICENSE.md
 !/tools/sqlmap/LICENSE*
 !/tools/zap/LICENSE*
 !/tools/wkhtmltopdf/LICENSE*
