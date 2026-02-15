@@ -33,6 +33,7 @@ class Crawler:
         self.forms = []
         self.logger = get_logger("crawler")
         self.exported = False
+        self.js_endpoints = set()
         self.use_js_crawling = bool(config.get("js_crawling", False))
         self.js_browser = config.get("js_browser", "auto").lower()  # auto|chrome|firefox|edge|chromium
         self.crawl_tree = {}  # Estructura árbol: {url: [hijos]}
@@ -214,6 +215,7 @@ class Crawler:
                                         js_endpoints = self._extract_js_endpoints(js_resp.text, url)
                                         for ep in js_endpoints:
                                             links.add(ep)
+                                            self.js_endpoints.add(ep)
                                             self.logger.info(f"[JS externo] Endpoint descubierto: {ep}")
                                 except Exception as e:
                                     self.logger.warning(f"Error analizando JS externo {js_url}: {e}")
@@ -230,6 +232,7 @@ class Crawler:
                                 js_endpoints = self._extract_js_endpoints(script.string, url)
                                 for ep in js_endpoints:
                                     links.add(ep)
+                                    self.js_endpoints.add(ep)
                                     self.logger.info(f"[JS embebido] Endpoint descubierto: {ep}")
                 if attr.startswith("data-") or attr in ("onclick", "onmouseover", "onload"):
                     if isinstance(val, str) and (val.startswith("/") or val.startswith("http")):
@@ -283,6 +286,14 @@ class Crawler:
             # Exportar formularios
             with open("reports/crawl_forms.json", "w", encoding="utf-8") as f:
                 json.dump(self.forms, f, indent=2, ensure_ascii=False)
+            # Exportar endpoints JS
+            with open("reports/crawl_js_endpoints.json", "w", encoding="utf-8") as f:
+                json.dump(sorted(self.js_endpoints), f, indent=2, ensure_ascii=False)
+            with open("reports/crawl_js_endpoints.csv", "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow(["endpoint_js"])
+                for ep in sorted(self.js_endpoints):
+                    writer.writerow([ep])
             # Exportar YAML si está disponible
             try:
                 import yaml
@@ -290,6 +301,8 @@ class Crawler:
                     yaml.dump(sorted(self.found_urls), f, allow_unicode=True)
                 with open("reports/crawl_forms.yaml", "w", encoding="utf-8") as f:
                     yaml.dump(self.forms, f, allow_unicode=True)
+                with open("reports/crawl_js_endpoints.yaml", "w", encoding="utf-8") as f:
+                    yaml.dump(sorted(self.js_endpoints), f, allow_unicode=True)
             except ImportError:
                 self.logger.warning("pyyaml no está instalado, no se exporta YAML.")
             except Exception as e:
