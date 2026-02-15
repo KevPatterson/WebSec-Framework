@@ -1,37 +1,122 @@
-# Descripción
+# WebSec Framework (Mini Acunetix)
 
 **WebSec Framework** es una plataforma modular y profesional para el análisis de seguridad en aplicaciones web. Permite automatizar el descubrimiento de vulnerabilidades, el fingerprinting tecnológico y la generación de reportes avanzados, integrando herramientas líderes del sector y facilitando la extensión mediante módulos y payloads personalizados. Su objetivo es ofrecer una solución flexible, potente y fácil de usar tanto para pentesters como para equipos de desarrollo y seguridad.
+
+## 🚀 Inicio Rápido
+
+```bash
+# Instalar dependencias
+pip install -r requirements.txt
+
+# Ejecutar escaneo
+python run.py https://example.com
+
+# Ver ayuda completa
+python run.py --help
+```
+
+📖 **[Ver Guía Rápida Completa](QUICKSTART.md)**
+
+## 📋 Tabla de Contenidos
+
+- [Características principales](#características-principales)
+- [Instalación](#instalación)
+- [Uso y ejemplos](#uso-y-ejemplos)
+- [Módulos de vulnerabilidad](#módulos-de-vulnerabilidad)
+- [Estructura y componentes](#estructura-y-componentes)
+- [Flujo de trabajo](#flujo-de-trabajo)
+- [Integración con herramientas externas](#integración-con-herramientas-externas)
+- [Documentación](#documentación)
+- [Cambios recientes](#cambios-recientes)
+- [Licencia](#licencia)
 ## Instalación
 
-1. Clona el repositorio y entra al directorio del proyecto.
-2. Instala las dependencias de Python:
-	```bash
-	pip install -r requirements.txt
-	```
-3. (Opcional) Para crawling JS, instala Playwright y Chromium:
-	```bash
-	pip install playwright
-	python -m playwright install chromium
-	```
-4. (Opcional) Instala PyYAML para exportar en YAML:
-	```bash
-	pip install pyyaml
-	```
-5. Descarga los binarios de Nuclei, sqlmap y ZAP y colócalos en `tools/` o configúralos en el PATH.
+```bash
+# 1. Clonar repositorio
+git clone <repo-url>
+cd websec-framework
+
+# 2. Instalar dependencias principales
+pip install -r requirements.txt
+
+# 3. (Opcional) Para crawling JS dinámico
+pip install playwright
+python -m playwright install chromium
+
+# 4. (Opcional) Para exportar en YAML
+pip install pyyaml
+```
+
+**Nota:** Los binarios de Nuclei, sqlmap y ZAP deben descargarse manualmente y ubicarse en `tools/` o estar en el PATH del sistema.
 
 ## Uso y ejemplos
 
-1. Configura el objetivo en `config/target.yaml`.
-2. Ejecuta el framework:
-	```bash
-	python run.py
-	```
-3. Los resultados se guardarán en la carpeta `reports/` en formatos HTML, JSON, CSV y YAML.
-4. Para visualizar el árbol de crawling de forma interactiva:
-	- Ejecuta el crawling normalmente.
-	- Inicia el servidor Flask (`python app.py` o según instrucciones en run.py).
-	- Abre `templates/crawl_tree.html` en el navegador (servido por Flask).
-	- El árbol se muestra con nodos expandibles, tooltips, y estética moderna.
+### Uso Básico
+
+```bash
+# Escaneo completo de un objetivo
+python run.py https://example.com
+
+# Ver ayuda completa
+python run.py --help
+```
+
+### Escaneo con Nuclei
+
+```bash
+# Escaneo básico con Nuclei
+python run.py https://example.com --nuclei
+
+# Filtrar por severidad
+python run.py https://example.com --nuclei --nuclei-severity high,critical
+
+# Filtrar por tags
+python run.py https://example.com --nuclei --nuclei-tags xss,sqli
+
+# Escaneo masivo desde archivo
+python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
+
+# Exportar resultados
+python run.py https://example.com --nuclei --nuclei-output report.json --nuclei-output-format json
+```
+
+### Uso Programático
+
+```python
+from core.scanner import Scanner
+from modules.headers import HeadersModule
+
+# Crear scanner
+scanner = Scanner("https://example.com", {})
+
+# Registrar módulos
+scanner.register_module(HeadersModule(scanner.config))
+
+# Ejecutar escaneo
+scanner.run()
+
+# Obtener resultados
+findings = scanner.all_findings
+```
+
+### Estructura de Reportes
+
+Los resultados se guardan en `reports/scan_TIMESTAMP/`:
+- `crawl_urls.json` - URLs descubiertas
+- `crawl_forms.json` - Formularios encontrados
+- `crawl_js_endpoints.json` - Endpoints JS
+- `crawl_tree.json` - Árbol de navegación
+- `fingerprint.json` - Información tecnológica
+- `headers_findings.json` - Hallazgos de security headers
+- `vulnerability_scan_consolidated.json` - Reporte consolidado
+
+### Visualización Interactiva
+
+Para visualizar el árbol de crawling:
+1. Ejecuta el crawling normalmente
+2. Inicia el servidor Flask: `python app.py`
+3. Abre http://localhost:5000/crawl_tree en tu navegador
+4. El árbol se muestra con nodos expandibles, tooltips y estética moderna
 ## Visualización interactiva del árbol de crawling
 
 El archivo `templates/crawl_tree.html` permite visualizar el mapa del sitio descubierto de forma interactiva y profesional:
@@ -51,11 +136,23 @@ Para usarlo:
 - Los payloads para XSS, SQLi, LFI, etc. están en la carpeta `payloads/` y pueden ser editados o ampliados.
 - Las plantillas HTML para reportes están en `templates/` y pueden personalizarse con Jinja2.
 
-## Documentación y desarrollo
+## Documentación
 
-- Consulta `docs/DEPENDENCIAS.md` para dependencias técnicas y recomendaciones.
-- Consulta `docs/PLAN_DESARROLLO.md` para la hoja de ruta y buenas prácticas de desarrollo.
-- Cada módulo y clase está documentado con docstrings para facilitar la extensión.
+### Documentación Principal
+- **[README.md](README.md)** - Este archivo, documentación general del framework
+- **[QUICKSTART.md](QUICKSTART.md)** - Guía rápida de inicio
+- **[docs/HEADERS_MODULE.md](docs/HEADERS_MODULE.md)** - Documentación completa del módulo Security Headers
+- **[docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md)** - Dependencias técnicas y recomendaciones
+- **[docs/PLAN_DESARROLLO.md](docs/PLAN_DESARROLLO.md)** - Hoja de ruta y buenas prácticas de desarrollo
+
+### Ayuda en Línea
+```bash
+python run.py --help
+```
+
+### Ejemplos de Código
+- **[example_usage.py](example_usage.py)** - Ejemplo de uso integrado del framework
+- **[test_headers.py](test_headers.py)** - Script de prueba del módulo Security Headers
 
 ## Herramientas externas utilizadas
 
@@ -74,15 +171,57 @@ Estas herramientas están integradas pero no desarrolladas por este proyecto. Co
 
 Cada módulo es autocontenible y puede activarse/desactivarse vía configuración. Los módulos incluidos son:
 
-- **XSS**: Reflected, Stored, DOM XSS
-- **SQLi**: SQL Injection (usa sqlmap para explotación avanzada)
-- **LFI**: Local/Remote File Inclusion
-- **CSRF**: Cross-Site Request Forgery
-- **CORS**: Configuración insegura de CORS
-- **Headers**: Análisis de cabeceras de seguridad
-- **Auth**: Autenticación débil o básica
+### ✅ Módulos Implementados
 
-Cada módulo implementa métodos `scan()` y `get_results()`, y puede usar payloads personalizados.
+#### **Security Headers** (COMPLETO)
+Análisis profesional de headers de seguridad HTTP según estándares OWASP.
+
+**Características:**
+- Detecta headers faltantes: HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
+- Valida configuraciones inseguras: CSP con unsafe-inline/unsafe-eval, HSTS con max-age bajo
+- Detecta information disclosure: Server, X-Powered-By, X-AspNet-Version
+- Identifica CORS permisivo y headers redundantes
+- CVSS scoring automático por hallazgo
+- Referencias a OWASP y MDN para cada issue
+
+**Severidades detectadas:**
+- HIGH: Headers críticos faltantes (HSTS, CSP, X-Frame-Options)
+- MEDIUM: Headers importantes faltantes o mal configurados
+- LOW: Information disclosure
+- INFO: Headers redundantes, recomendaciones
+
+**Salida:**
+- `headers_findings.json`: Hallazgos detallados con evidencia
+- Recomendaciones de remediación específicas
+- Referencias a documentación oficial
+
+**Documentación completa:** [docs/HEADERS_MODULE.md](docs/HEADERS_MODULE.md)
+
+**Ejemplo de uso:**
+```bash
+python run.py https://example.com
+```
+
+**Ejemplo programático:**
+```python
+from core.scanner import Scanner
+from modules.headers import HeadersModule
+
+scanner = Scanner("https://example.com", {})
+scanner.register_module(HeadersModule(scanner.config))
+scanner.run()
+```
+
+### 🚧 Módulos en Desarrollo
+
+- **XSS**: Reflected, Stored, DOM XSS (próximamente)
+- **SQLi**: SQL Injection con integración sqlmap (próximamente)
+- **LFI**: Local/Remote File Inclusion (próximamente)
+- **CSRF**: Cross-Site Request Forgery (próximamente)
+- **CORS**: Análisis profundo de CORS (próximamente)
+- **Auth**: Autenticación débil o básica (próximamente)
+
+Cada módulo implementa la interfaz `VulnerabilityModule` con métodos `scan()` y `get_results()`, y puede usar payloads personalizados.
 
 ## Integración con herramientas externas
 
@@ -212,10 +351,115 @@ Configura el objetivo y parámetros en `config/target.yaml`.
 
 ## Cambios recientes
 
-- Añadida visualización interactiva del árbol de crawling (`crawl_tree.html`).
-- Mejorada la estética general de la visualización (CSS, SVG, responsive).
-- Automatización del flujo de crawling y visualización.
+### v0.2.0 (Febrero 2026)
+- ✅ **Módulo Security Headers completo**: Análisis profesional de headers HTTP según OWASP
+  - Detección de 7 headers de seguridad críticos
+  - Validación de CSP y HSTS con análisis profundo
+  - Information disclosure detection
+  - CVSS scoring automático
+  - Exportación JSON estructurada
+- ✅ **Scanner mejorado**: Consolidación de reportes y ejecución concurrente
+- ✅ **Documentación completa**: docs/HEADERS_MODULE.md con ejemplos y referencias
+
+### v0.1.0 (Enero 2026)
+- Añadida visualización interactiva del árbol de crawling (`crawl_tree.html`)
+- Mejorada la estética general de la visualización (CSS, SVG, responsive)
+- Automatización del flujo de crawling y visualización
+- Integración completa con Nuclei
+- Crawling inteligente con soporte JS (Playwright)
 
 ## Licencia
 
 Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+
+## Características principales
+
+- Crawling inteligente de URLs, formularios y recursos (robots.txt, sitemap.xml, manifest.json, service workers)
+- Soporte para crawling dinámico con Playwright (JS)
+- Fingerprinting tecnológico: servidor, frameworks, cookies, WAF
+- Detección de vulnerabilidades: Security Headers (implementado), XSS, SQLi, LFI, CSRF, CORS, Auth (próximamente)
+- Validación de falsos positivos
+- Integración con Nuclei, sqlmap y OWASP ZAP
+- Exportación de resultados en JSON, CSV, YAML y HTML profesional
+- Plantillas de reporte personalizables (Jinja2)
+- Logging centralizado y colorido
+- Modularidad total: fácil de extender con nuevos módulos y payloads
+- Ejecución concurrente optimizada
+
+## Estructura y componentes
+
+```
+websec-framework/
+├── config/                 # Configuración de objetivos (YAML)
+├── core/                   # Lógica principal y orquestación
+│   ├── base_module.py      # Interfaz base para módulos
+│   ├── crawler.py          # Crawling inteligente
+│   ├── fingerprint.py      # Fingerprinting tecnológico
+│   ├── scanner.py          # Orquestador de módulos
+│   ├── validator.py        # Validación de falsos positivos
+│   ├── reporter.py         # Generación de reportes
+│   ├── logger.py           # Logger centralizado
+│   └── external/           # Integración con Nuclei, sqlmap, ZAP
+├── modules/                # Módulos de vulnerabilidad
+│   ├── headers.py          # ✅ Security Headers (implementado)
+│   ├── xss.py              # 🚧 XSS (próximamente)
+│   ├── sqli.py             # 🚧 SQLi (próximamente)
+│   └── ...                 # Otros módulos
+├── payloads/               # Payloads para pruebas de inyección
+├── reports/                # Resultados y reportes generados
+├── templates/              # Plantillas HTML para reportes
+├── tools/                  # Binarios externos (Nuclei, sqlmap, ZAP)
+├── docs/                   # Documentación técnica
+├── run.py                  # Script principal de ejecución
+├── app.py                  # Servidor Flask para visualización
+└── requirements.txt        # Dependencias Python
+```
+
+### Descripción de carpetas clave
+
+- **core/**: Motor del framework. Incluye crawling, fingerprinting, orquestación de módulos, validación y reportería.
+- **modules/**: Cada archivo implementa un módulo de detección de vulnerabilidad. Todos heredan de `VulnerabilityModule`.
+- **core/external/**: Integración robusta con Nuclei, sqlmap y ZAP (ejecución, parseo de resultados, manejo de errores).
+- **payloads/**: Listas de payloads para pruebas automáticas (XSS, SQLi, LFI, etc.).
+- **templates/**: Plantillas Jinja2 para reportes HTML profesionales.
+- **config/**: Archivos YAML para definir objetivos, cabeceras, cookies y parámetros de escaneo.
+- **tools/**: Binarios y recursos de herramientas externas (no incluidos, deben descargarse manualmente).
+- **docs/**: Documentación técnica, dependencias y plan de desarrollo.
+
+## Flujo de trabajo
+
+1. **Configuración**: Define el objetivo y parámetros (puede ser vía CLI o config YAML)
+2. **Crawling**: Descubre URLs, formularios y recursos usando crawling inteligente (con o sin JS)
+3. **Fingerprinting**: Identifica tecnologías, frameworks, cookies y posibles WAF
+4. **Escaneo de vulnerabilidades**: Ejecución concurrente de todos los módulos registrados
+5. **Validación**: Se filtran falsos positivos mediante heurísticas y comparación de respuestas
+6. **Reporte**: Se genera un reporte profesional consolidado en múltiples formatos
+
+## Cambios recientes
+
+### v0.2.0 (Febrero 2026)
+- ✅ **Módulo Security Headers completo**: Análisis profesional de headers HTTP según OWASP
+  - Detección de 7 headers de seguridad críticos
+  - Validación de CSP y HSTS con análisis profundo
+  - Information disclosure detection
+  - CVSS scoring automático
+  - Exportación JSON estructurada
+- ✅ **Scanner mejorado**: Consolidación de reportes y ejecución concurrente
+- ✅ **Documentación completa**: docs/HEADERS_MODULE.md con ejemplos y referencias
+- ✅ **Guía rápida**: QUICKSTART.md para inicio rápido
+- ✅ **Help mejorado**: --help con formato profesional y completo
+
+### v0.1.0 (Enero 2026)
+- Añadida visualización interactiva del árbol de crawling (`crawl_tree.html`)
+- Mejorada la estética general de la visualización (CSS, SVG, responsive)
+- Automatización del flujo de crawling y visualización
+- Integración completa con Nuclei
+- Crawling inteligente con soporte JS (Playwright)
+
+## Licencia
+
+Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+
+---
+
+**Desarrollado con ❤️ para la comunidad de seguridad web**

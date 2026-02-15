@@ -23,68 +23,189 @@ from core.external.nuclei_runner import NucleiRunner
 
 def print_help():
     help_text = """
-WebSec Framework - Escaneo profesional de seguridad web
+================================================================================
+                    WebSec Framework - Escaneo Profesional
+                         de Seguridad en Aplicaciones Web
+================================================================================
 
-Uso:
+DESCRIPCION:
+    Framework modular y profesional para analisis de seguridad web, inspirado
+    en Acunetix. Automatiza el descubrimiento de vulnerabilidades, fingerprinting
+    tecnologico y generacion de reportes avanzados.
+
+USO:
     python run.py <target> [opciones]
     python run.py --nuclei-url-list <archivo_urls> [opciones]
 
-Argumentos:
+ARGUMENTOS:
     target                URL objetivo a analizar (ej: https://example.com)
 
-Opciones generales:
-    --config <ruta>       Ruta a archivo de configuración YAML (por defecto: config/target.yaml)
-    --help                Muestra esta ayuda extendida
+OPCIONES GENERALES:
+    --config <ruta>       Ruta a archivo de configuracion YAML
+                          (por defecto: config/target.yaml)
+    --help, -h            Muestra esta ayuda extendida
 
-Integración de herramientas externas:
-    --nuclei              Orquesta Nuclei (plantillas CVE, resultados JSON)
-    --nuclei-url-list <archivo>  Escanea una lista de URLs (una por línea)
-    --nuclei-severity     Filtrar por severidad (critical,high,medium,low,info)
-    --nuclei-tags         Filtrar por tags (ej: xss,sqli)
-    --nuclei-cves         Filtrar por CVEs (ej: CVE-2023-1234,CVE-2022-5678)
-    --nuclei-categories   Filtrar por categorías (ej: exposures,misconfiguration)
-    --nuclei-header <header>     Añadir header personalizado (puede usarse varias veces)
-    --nuclei-cookie <cookie>     Añadir cookies (formato: "key1=val1; key2=val2")
-    --nuclei-rate-limit <n>      Limitar requests por segundo (ej: 10)
-    --nuclei-proxy <url>         Usar proxy HTTP/SOCKS (ej: http://127.0.0.1:8080)
-    --nuclei-threads <n>         Número de hilos/concurrencia para escaneo masivo (ej: 4, 10, 50)
+================================================================================
+MODULOS DE VULNERABILIDADES
+================================================================================
 
-    Ejecución concurrente:
-        - El framework ejecuta crawling, fingerprinting y escaneo de vulnerabilidades en paralelo para máxima eficiencia.
-        - El escaneo con Nuclei sobre múltiples URLs se realiza en paralelo usando --nuclei-threads para controlar el número de hilos.
-        - Ejemplo: python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
+El framework ejecuta automaticamente los siguientes modulos:
 
-    Notas profesionales:
-        - El binario portable de wkhtmltopdf debe estar en tools/wkhtmltopdf/ para exportar a PDF sin instalación.
-        - El framework detecta y solicita elevación de privilegios automáticamente si es necesario en Windows.
-        - Todos los formatos de salida soportan exportación masiva y agrupación avanzada.
-    --nuclei-templates <ruta>    Ruta a templates personalizados de Nuclei
-    --nuclei-update-templates    Actualiza los templates de Nuclei automáticamente
-    --nuclei-output <archivo>    Guardar salida de Nuclei en archivo (JSON, YAML, HTML, PDF, CSV)
-    --nuclei-output-format <fmt> Formato de salida: json, yaml, html, pdf, csv (por defecto: json)
+[OK] SECURITY HEADERS (Implementado)
+   Analisis profesional de headers HTTP segun estandares OWASP
 
-Ejemplos de exportación:
-    python run.py <target> --nuclei --nuclei-output report.json --nuclei-output-format json
-    python run.py <target> --nuclei --nuclei-output report.yaml --nuclei-output-format yaml
-    python run.py <target> --nuclei --nuclei-output report.html --nuclei-output-format html
-    python run.py <target> --nuclei --nuclei-output report.pdf --nuclei-output-format pdf
-    python run.py <target> --nuclei --nuclei-output report.csv --nuclei-output-format csv
+   Detecta:
+   - Headers faltantes: HSTS, CSP, X-Frame-Options, X-Content-Type-Options,
+     Referrer-Policy, Permissions-Policy, X-XSS-Protection
+   - Configuraciones inseguras: CSP con unsafe-inline/unsafe-eval, HSTS debil
+   - Information disclosure: Server, X-Powered-By, X-AspNet-Version
+   - CORS permisivo: Access-Control-Allow-Origin: *
+   - Headers redundantes
 
-Para PDF necesitas instalar weasyprint: pip install weasyprint
-    (Próximamente: sqlmap, ZAP)
+   Severidades: HIGH, MEDIUM, LOW, INFO
+   Salida: headers_findings.json con CVSS scoring y referencias OWASP
 
-Flujo de ejecución:
-    1. Descubrimiento y crawling inteligente
-    2. Fingerprinting tecnológico
-    3. Escaneo automatizado de vulnerabilidades (XSS, SQLi, CSRF, headers, CORS, auth, LFI)
-    4. Validación de falsos positivos
-    5. Generación de reportes profesionales (HTML/JSON)
+   Documentacion: docs/HEADERS_MODULE.md
 
-Ejemplo de uso avanzado:
-    python run.py https://example.com --nuclei --nuclei-severity high,critical --nuclei-tags xss,sqli --nuclei-cves CVE-2023-1234 --nuclei-categories exposures --nuclei-header "Authorization: Bearer TOKEN" --nuclei-cookie "sessionid=abc; csrftoken=xyz"
-    python run.py --nuclei-url-list urls.txt --nuclei --nuclei-severity high
+[WIP] PROXIMOS MODULOS:
+   - XSS: Reflected, Stored, DOM XSS
+   - SQLi: SQL Injection con integracion sqlmap
+   - LFI: Local/Remote File Inclusion
+   - CSRF: Cross-Site Request Forgery
+   - CORS: Analisis profundo de CORS
+   - Auth: Autenticacion debil
+
+================================================================================
+INTEGRACION CON NUCLEI
+================================================================================
+
+    --nuclei              Ejecuta Nuclei sobre el objetivo
+    --nuclei-url-list <archivo>
+                          Escanea lista de URLs (una por linea)
+    --nuclei-severity <severities>
+                          Filtrar por severidad (critical,high,medium,low,info)
+    --nuclei-tags <tags>  Filtrar por tags (ej: xss,sqli)
+    --nuclei-cves <cves>  Filtrar por CVEs (ej: CVE-2023-1234,CVE-2022-5678)
+    --nuclei-categories <cats>
+                          Filtrar por categorias (ej: exposures,misconfiguration)
+    --nuclei-header <header>
+                          Anadir header personalizado (puede usarse varias veces)
+    --nuclei-cookie <cookie>
+                          Anadir cookies (formato: "key1=val1; key2=val2")
+    --nuclei-rate-limit <n>
+                          Limitar requests por segundo (ej: 10)
+    --nuclei-proxy <url>  Usar proxy HTTP/SOCKS (ej: http://127.0.0.1:8080)
+    --nuclei-threads <n>  Numero de hilos/concurrencia (ej: 4, 10, 50)
+    --nuclei-templates <ruta>
+                          Ruta a templates personalizados de Nuclei
+    --nuclei-update-templates
+                          Actualiza los templates de Nuclei automaticamente
+    --nuclei-output <archivo>
+                          Guardar salida de Nuclei en archivo
+    --nuclei-output-format <fmt>
+                          Formato: json, yaml, html, pdf, csv (por defecto: json)
+
+================================================================================
+FLUJO DE EJECUCION
+================================================================================
+
+    1. Descubrimiento y Crawling Inteligente
+       - URLs internas, formularios, parametros GET/POST
+       - Recursos: robots.txt, sitemap.xml, manifest.json, service workers
+       - Endpoints JS (analisis de codigo JavaScript)
+       - Soporte para crawling dinamico con Playwright (opcional)
+
+    2. Fingerprinting Tecnologico
+       - Servidor web, frameworks backend
+       - Cookies, headers de seguridad
+       - Deteccion de WAF/proxy
+
+    3. Escaneo de Vulnerabilidades
+       - Ejecucion concurrente de todos los modulos
+       - Security Headers (implementado)
+       - XSS, SQLi, CSRF, LFI, CORS, Auth (proximamente)
+
+    4. Validacion de Falsos Positivos
+       - Comparacion de respuestas baseline
+       - Heuristicas de confirmacion
+
+    5. Generacion de Reportes Profesionales
+       - JSON estructurado con evidencia completa
+       - HTML profesional con plantillas Jinja2
+       - CSV y YAML para analisis
+       - Reporte consolidado de todos los modulos
+
+================================================================================
+EJEMPLOS DE USO
+================================================================================
+
+Escaneo basico:
+    python run.py https://example.com
+
+Escaneo con Nuclei (severidad alta):
+    python run.py https://example.com --nuclei --nuclei-severity high,critical
+
+Escaneo masivo con Nuclei:
+    python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
+
+Escaneo con headers personalizados:
+    python run.py https://example.com --nuclei ^
+        --nuclei-header "Authorization: Bearer TOKEN" ^
+        --nuclei-cookie "sessionid=abc; csrftoken=xyz"
+
+Exportar resultados en multiples formatos:
+    python run.py https://example.com --nuclei ^
+        --nuclei-output report.json --nuclei-output-format json
+
+    python run.py https://example.com --nuclei ^
+        --nuclei-output report.html --nuclei-output-format html
+
+================================================================================
+ESTRUCTURA DE REPORTES
+================================================================================
+
+Los resultados se guardan en: reports/scan_TIMESTAMP/
+
+Archivos generados:
+    - crawl_urls.json              - URLs descubiertas
+    - crawl_forms.json             - Formularios encontrados
+    - crawl_js_endpoints.json      - Endpoints JavaScript
+    - crawl_tree.json              - Arbol de navegacion
+    - fingerprint.json             - Informacion tecnologica
+    - headers_findings.json        - Hallazgos de security headers
+    - vulnerability_scan_consolidated.json - Reporte consolidado
+
+Visualizacion interactiva:
+    1. Ejecuta: python app.py
+    2. Abre: http://localhost:5000/crawl_tree
+
+================================================================================
+NOTAS PROFESIONALES
+================================================================================
+
+- El framework ejecuta crawling, fingerprinting y escaneo en paralelo para
+  maxima eficiencia
+- El binario portable de wkhtmltopdf debe estar en tools/wkhtmltopdf/ para
+  exportar a PDF sin instalacion
+- El framework detecta y solicita elevacion de privilegios automaticamente
+  si es necesario en Windows
+- Todos los formatos de salida soportan exportacion masiva y agrupacion avanzada
+- Para PDF necesitas instalar weasyprint: pip install weasyprint
+
+================================================================================
+DOCUMENTACION
+================================================================================
+
+README.md                  - Documentacion general del framework
+QUICKSTART.md              - Guia rapida de inicio
+docs/HEADERS_MODULE.md     - Documentacion completa del modulo Security Headers
+docs/DEPENDENCIAS.md       - Dependencias tecnicas y recomendaciones
+docs/PLAN_DESARROLLO.md    - Hoja de ruta y buenas practicas
+
+================================================================================
 """
     print(help_text)
+
 def main():
     import sys
     if '--help' in sys.argv or '-h' in sys.argv:
