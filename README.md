@@ -197,25 +197,65 @@ Análisis profesional de headers de seguridad HTTP según estándares OWASP.
 
 **Documentación completa:** [docs/HEADERS_MODULE.md](docs/HEADERS_MODULE.md)
 
+#### **XSS - Cross-Site Scripting** (COMPLETO)
+Detección de vulnerabilidades XSS: Reflected, Stored y DOM-based.
+
+**Características:**
+- Detección de Reflected XSS en parámetros GET/POST y formularios
+- Análisis de DOM XSS mediante inspección de JavaScript
+- 60+ payloads de prueba (básicos y avanzados)
+- Detección de contextos de inyección (HTML, atributos, JavaScript)
+- Bypass de filtros comunes
+- Validación de reflejos sin sanitización
+
+**Técnicas de detección:**
+- Inyección de payloads en parámetros
+- Análisis de respuestas HTTP
+- Detección de patrones XSS en código
+- Identificación de funciones JavaScript peligrosas (eval, innerHTML, document.write)
+
+**Salida:**
+- `xss_findings.json`: Hallazgos con payload, contexto y evidencia
+- CVSS: 7.1 (Reflected), 6.1 (DOM-based)
+- CWE-79, OWASP A03:2021
+
 **Ejemplo de uso:**
 ```bash
 python run.py https://example.com
 ```
 
-**Ejemplo programático:**
-```python
-from core.scanner import Scanner
-from modules.headers import HeadersModule
+#### **SQLi - SQL Injection** (COMPLETO)
+Detección de SQL Injection con soporte para integración con SQLMap.
 
-scanner = Scanner("https://example.com", {})
-scanner.register_module(HeadersModule(scanner.config))
-scanner.run()
+**Características:**
+- Detección Error-based: Identifica mensajes de error SQL
+- Detección Boolean-based: Análisis de respuestas diferenciales
+- Soporte para MySQL, PostgreSQL, MSSQL, Oracle, SQLite
+- 100+ payloads de prueba organizados por tipo
+- Integración opcional con SQLMap para explotación avanzada
+- Detección de múltiples técnicas: UNION, Time-based, Stacked queries
+
+**Técnicas de detección:**
+- Error-based: Busca mensajes de error SQL en respuestas
+- Boolean-based: Compara respuestas TRUE vs FALSE
+- Análisis de longitud de respuesta
+- Detección de DBMS específico
+
+**Salida:**
+- `sqli_findings.json`: Hallazgos con payload, tipo y evidencia
+- CVSS: 9.8 (Error-based), 8.6 (Boolean-based)
+- CWE-89, OWASP A03:2021
+
+**Integración SQLMap:**
+```python
+config = {
+    "use_sqlmap": True,  # Habilitar SQLMap
+    "target_url": "https://example.com"
+}
 ```
 
 ### 🚧 Módulos en Desarrollo
 
-- **XSS**: Reflected, Stored, DOM XSS (próximamente)
-- **SQLi**: SQL Injection con integración sqlmap (próximamente)
 - **LFI**: Local/Remote File Inclusion (próximamente)
 - **CSRF**: Cross-Site Request Forgery (próximamente)
 - **CORS**: Análisis profundo de CORS (próximamente)
@@ -436,6 +476,22 @@ websec-framework/
 6. **Reporte**: Se genera un reporte profesional consolidado en múltiples formatos
 
 ## Cambios recientes
+
+### v0.3.0 (Febrero 2026) - ACTUAL
+- ✅ **Módulo XSS completo**: Detección de Cross-Site Scripting
+  - Reflected XSS en parámetros GET/POST
+  - DOM-based XSS mediante análisis de JavaScript
+  - 60+ payloads organizados (básicos, avanzados, bypass)
+  - Detección de contextos de inyección
+  - CVSS scoring y referencias OWASP
+- ✅ **Módulo SQLi completo**: Detección de SQL Injection
+  - Error-based SQLi con detección de DBMS
+  - Boolean-based SQLi con análisis diferencial
+  - 100+ payloads organizados por tipo y DBMS
+  - Integración opcional con SQLMap
+  - Soporte MySQL, PostgreSQL, MSSQL, Oracle, SQLite
+- ✅ **Payloads actualizados**: Archivos xss.txt y sqli.txt ampliados
+- ✅ **Tests**: Script test_xss_sqli.py para validación
 
 ### v0.2.0 (Febrero 2026)
 - ✅ **Módulo Security Headers completo**: Análisis profesional de headers HTTP según OWASP

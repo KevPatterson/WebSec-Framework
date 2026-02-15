@@ -67,9 +67,35 @@ El framework ejecuta automaticamente los siguientes modulos:
 
    Documentacion: docs/HEADERS_MODULE.md
 
+[OK] XSS - CROSS-SITE SCRIPTING (Implementado)
+   Deteccion de XSS: Reflected, Stored y DOM-based
+
+   Detecta:
+   - Reflected XSS en parametros GET/POST y formularios
+   - DOM XSS mediante analisis de JavaScript
+   - 60+ payloads (basicos, avanzados, bypass)
+   - Contextos de inyeccion (HTML, atributos, JavaScript)
+   - Funciones peligrosas: eval, innerHTML, document.write
+
+   Severidades: HIGH (Reflected), MEDIUM (DOM-based)
+   Salida: xss_findings.json con payload y evidencia
+   CVSS: 7.1 (Reflected), 6.1 (DOM) | CWE-79 | OWASP A03:2021
+
+[OK] SQLi - SQL INJECTION (Implementado)
+   Deteccion de SQL Injection con integracion SQLMap opcional
+
+   Detecta:
+   - Error-based SQLi (mensajes de error SQL)
+   - Boolean-based SQLi (analisis diferencial)
+   - 100+ payloads organizados por tipo y DBMS
+   - Soporte: MySQL, PostgreSQL, MSSQL, Oracle, SQLite
+   - Integracion con SQLMap para explotacion avanzada
+
+   Severidades: CRITICAL (Error-based), HIGH (Boolean-based)
+   Salida: sqli_findings.json con tipo, payload y evidencia
+   CVSS: 9.8 (Error), 8.6 (Boolean) | CWE-89 | OWASP A03:2021
+
 [WIP] PROXIMOS MODULOS:
-   - XSS: Reflected, Stored, DOM XSS
-   - SQLi: SQL Injection con integracion sqlmap
    - LFI: Local/Remote File Inclusion
    - CSRF: Cross-Site Request Forgery
    - CORS: Analisis profundo de CORS

