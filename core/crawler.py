@@ -234,12 +234,12 @@ class Crawler:
                         durl = urljoin(url, val)
                         if self._is_internal(durl):
                             links.add(self._normalize_url(durl))
-            # Endpoints en comentarios HTML
-            for comment in soup.find_all(string=lambda text: isinstance(text, type(soup.comment))):
-                if "http" in comment:
-                    for word in comment.split():
-                        if word.startswith("http") and self._is_internal(word):
-                            links.add(self._normalize_url(word))
+        # Endpoints en comentarios HTML
+        for comment in soup.find_all(string=lambda text: isinstance(text, type(soup.comment))):
+            if "http" in comment:
+                for word in comment.split():
+                    if word.startswith("http") and self._is_internal(word):
+                        links.add(self._normalize_url(word))
         # Endpoints de JS embebido
         for script in soup.find_all("script"):
             if script.string:
