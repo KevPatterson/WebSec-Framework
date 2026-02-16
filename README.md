@@ -8,8 +8,11 @@
 # Instalar dependencias
 pip install -r requirements.txt
 
-# Ejecutar escaneo con validación automática
+# Ejecutar escaneo completo con validación automática
 python run.py https://example.com
+
+# Escaneo rápido sin crawling (solo vulnerabilidades)
+python run.py https://example.com --no-crawl
 
 # Escaneo con exportación a PDF
 python run.py https://example.com --export-pdf
@@ -96,6 +99,9 @@ El framework incluye un sistema avanzado de validación que reduce significativa
 ```bash
 # Validación habilitada por defecto
 python run.py https://example.com
+
+# Escaneo rápido sin crawling (solo vulnerabilidades)
+python run.py https://example.com --no-crawl
 
 # Filtrar hallazgos de baja confianza
 python run.py https://example.com --filter-low-confidence

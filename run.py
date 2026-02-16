@@ -56,6 +56,8 @@ OPCIONES GENERALES:
     --export-pdf          Exportar reporte HTML a PDF automaticamente
                           (requiere wkhtmltopdf instalado)
     --no-validation       Deshabilitar sistema de validacion automatica
+    --no-crawl            Deshabilitar crawling y fingerprinting
+                          (solo ejecuta escaneo de vulnerabilidades)
     --filter-low-confidence
                           Filtrar hallazgos con confianza < 60%
     --help, -h            Muestra esta ayuda extendida
@@ -399,6 +401,12 @@ Escaneo basico con validacion:
 Escaneo con exportacion a PDF:
     python run.py https://example.com --export-pdf
 
+Escaneo sin crawling (solo vulnerabilidades):
+    python run.py https://example.com --no-crawl
+
+Escaneo rapido sin crawling ni validacion:
+    python run.py https://example.com --no-crawl --no-validation
+
 Escaneo filtrando baja confianza:
     python run.py https://example.com --filter-low-confidence
 
@@ -653,14 +661,22 @@ def main():
             scanner.register_module(AuthModule(scanner.config))
             scanner.run()
             return scanner
-            
-        # Control de threads: máximo 3 tareas concurrentes (crawling, fingerprint, escaneo)
-        with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
-            futures = [
-                executor.submit(run_crawler),
-                executor.submit(run_finger),
-                executor.submit(run_scanner)
-            ]
+        
+        # Determinar qué tareas ejecutar según las opciones
+        tasks = []
+        
+        if not args.no_crawl:
+            tasks.append(run_crawler)
+            tasks.append(run_finger)
+        else:
+            print("[!] Crawling deshabilitado (--no-crawl). Solo se ejecutará el escaneo de vulnerabilidades.")
+        
+        tasks.append(run_scanner)
+        
+        # Control de threads: ejecutar tareas seleccionadas
+        max_workers = len(tasks) if len(tasks) <= 3 else 3
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(task) for task in tasks]
             concurrent.futures.wait(futures)
 
         # Fase 4: Validación de falsos positivos (placeholder)
@@ -673,8 +689,11 @@ def main():
         # reporter.generate(scanner.findings, output_dir=report_dir, target_url=args.target, scan_timestamp=scan_timestamp)
         
         print(f"\n[+] Escaneo completado. Reportes guardados en: {report_dir}")
-        print(f"    - Crawling: crawl_urls.json, crawl_forms.json, crawl_js_endpoints.json, crawl_tree.json")
-        print(f"    - Fingerprinting: fingerprint.json")
+        
+        if not args.no_crawl:
+            print(f"    - Crawling: crawl_urls.json, crawl_forms.json, crawl_js_endpoints.json, crawl_tree.json")
+            print(f"    - Fingerprinting: fingerprint.json")
+        
         print(f"    - Security Headers: headers_findings.json")
         print(f"    - XSS: xss_findings.json")
         print(f"    - SQLi: sqli_findings.json")
