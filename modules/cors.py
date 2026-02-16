@@ -61,9 +61,10 @@ class CORSModule(VulnerabilityModule):
             
             if acao == '*':
                 finding = {
-                    "vulnerability": "CORS - Wildcard Origin",
+                    "type": "cors_wildcard",
                     "severity": "high",
-                    "cvss_score": 7.5,
+                    "title": "CORS - Wildcard Origin",
+                    "cvss": 7.5,
                     "url": self.target_url,
                     "description": "Access-Control-Allow-Origin configurado con wildcard (*)",
                     "details": {
@@ -96,9 +97,10 @@ class CORSModule(VulnerabilityModule):
             # Wildcard con credentials es una configuración crítica
             if acao == '*' and acac.lower() == 'true':
                 finding = {
-                    "vulnerability": "CORS - Credentials with Wildcard",
+                    "type": "cors_credentials_wildcard",
                     "severity": "critical",
-                    "cvss_score": 9.1,
+                    "title": "CORS - Credentials with Wildcard",
+                    "cvss": 9.1,
                     "url": self.target_url,
                     "description": "CORS permite credentials con wildcard origin (configuración inválida pero peligrosa)",
                     "details": {
@@ -117,9 +119,10 @@ class CORSModule(VulnerabilityModule):
             # Reflexión de origin con credentials
             elif acao == 'https://evil.com' and acac.lower() == 'true':
                 finding = {
-                    "vulnerability": "CORS - Origin Reflection with Credentials",
+                    "type": "cors_origin_reflection_credentials",
                     "severity": "critical",
-                    "cvss_score": 9.1,
+                    "title": "CORS - Origin Reflection with Credentials",
+                    "cvss": 9.1,
                     "url": self.target_url,
                     "description": "CORS refleja cualquier origin con credentials habilitados",
                     "details": {
@@ -155,9 +158,10 @@ class CORSModule(VulnerabilityModule):
                 
                 if found_dangerous:
                     finding = {
-                        "vulnerability": "CORS - Dangerous Methods Allowed",
+                        "type": "cors_dangerous_methods",
                         "severity": "medium",
-                        "cvss_score": 6.5,
+                        "title": "CORS - Dangerous Methods Allowed",
+                        "cvss": 6.5,
                         "url": self.target_url,
                         "description": f"CORS permite métodos HTTP peligrosos: {', '.join(found_dangerous)}",
                         "details": {
@@ -188,9 +192,10 @@ class CORSModule(VulnerabilityModule):
             
             if acao == 'null':
                 finding = {
-                    "vulnerability": "CORS - Null Origin Accepted",
+                    "type": "cors_null_origin",
                     "severity": "high",
-                    "cvss_score": 7.5,
+                    "title": "CORS - Null Origin Accepted",
+                    "cvss": 7.5,
                     "url": self.target_url,
                     "description": "CORS acepta origin 'null' (puede ser explotado desde sandboxed iframes)",
                     "details": {
@@ -227,9 +232,10 @@ class CORSModule(VulnerabilityModule):
                 
                 if acao == origin:
                     finding = {
-                        "vulnerability": "CORS - Arbitrary Origin Reflection",
+                        "type": "cors_arbitrary_origin_reflection",
                         "severity": "high",
-                        "cvss_score": 7.5,
+                        "title": "CORS - Arbitrary Origin Reflection",
+                        "cvss": 7.5,
                         "url": self.target_url,
                         "description": f"CORS refleja origin arbitrario sin validación: {origin}",
                         "details": {

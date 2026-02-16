@@ -32,7 +32,7 @@ class HeadersModule(VulnerabilityModule):
             "recommended_values": ["includeSubDomains", "preload"]
         },
         "X-Frame-Options": {
-            "severity": "high",
+            "severity": "medium",
             "description": "Previene ataques de clickjacking",
             "recommendation": "Añadir: X-Frame-Options: DENY o SAMEORIGIN",
             "cvss": 6.5,
@@ -70,7 +70,7 @@ class HeadersModule(VulnerabilityModule):
             "severity": "low",
             "description": "Activa el filtro XSS del navegador (deprecado pero útil para navegadores antiguos)",
             "recommendation": "Añadir: X-XSS-Protection: 1; mode=block",
-            "cvss": 4.3,
+            "cvss": 3.7,
             "references": [
                 "https://owasp.org/www-project-secure-headers/#x-xss-protection",
                 "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-XSS-Protection"

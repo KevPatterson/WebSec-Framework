@@ -89,9 +89,10 @@ class CSRFModule(VulnerabilityModule):
                     full_action = urljoin(self.target_url, form_action)
                     
                     finding = {
-                        "vulnerability": "CSRF - Missing Token",
+                        "type": "csrf_missing_token",
                         "severity": "high",
-                        "cvss_score": 8.8,
+                        "title": "CSRF - Missing Token",
+                        "cvss": 8.8,
                         "url": full_action,
                         "method": form_method,
                         "description": f"Formulario sin token CSRF detectado",
@@ -147,9 +148,10 @@ class CSRFModule(VulnerabilityModule):
                 
                 if not has_samesite:
                     finding = {
-                        "vulnerability": "CSRF - Missing SameSite Cookie Attribute",
+                        "type": "csrf_missing_samesite",
                         "severity": "medium",
-                        "cvss_score": 6.5,
+                        "title": "CSRF - Missing SameSite Cookie Attribute",
+                        "cvss": 6.5,
                         "url": self.target_url,
                         "description": f"Cookie '{cookie_name}' sin atributo SameSite",
                         "details": {
@@ -167,9 +169,10 @@ class CSRFModule(VulnerabilityModule):
                 
                 elif samesite_value and samesite_value.lower() == 'none' and not cookie.secure:
                     finding = {
-                        "vulnerability": "CSRF - Insecure SameSite=None Cookie",
+                        "type": "csrf_insecure_samesite_none",
                         "severity": "high",
-                        "cvss_score": 7.5,
+                        "title": "CSRF - Insecure SameSite=None Cookie",
+                        "cvss": 7.5,
                         "url": self.target_url,
                         "description": f"Cookie '{cookie_name}' con SameSite=None sin Secure flag",
                         "details": {
@@ -215,9 +218,10 @@ class CSRFModule(VulnerabilityModule):
                         # Si acepta el request sin validar Origin
                         if response.status_code not in [403, 401]:
                             finding = {
-                                "vulnerability": "CSRF - Missing Origin/Referer Validation",
+                                "type": "csrf_missing_origin_validation",
                                 "severity": "high",
-                                "cvss_score": 8.1,
+                                "title": "CSRF - Missing Origin/Referer Validation",
+                                "cvss": 8.1,
                                 "url": endpoint,
                                 "method": "POST",
                                 "description": f"Endpoint acepta peticiones con Origin malicioso: {origin}",
@@ -267,9 +271,10 @@ class CSRFModule(VulnerabilityModule):
                     # Si no rechaza la petición (403/401), podría ser vulnerable
                     if response.status_code not in [403, 401, 404]:
                         finding = {
-                            "vulnerability": "CSRF - Unprotected Endpoint",
+                            "type": "csrf_unprotected_endpoint",
                             "severity": "high",
-                            "cvss_score": 8.8,
+                            "title": "CSRF - Unprotected Endpoint",
+                            "cvss": 8.8,
                             "url": full_url,
                             "method": "POST",
                             "description": f"Endpoint sensible sin protección CSRF aparente",

@@ -587,9 +587,9 @@
                     <tr class="finding-row" data-severity="{{ finding.severity }}" onclick="toggleDetails({{ loop.index0 }})">
                         <td>{{ loop.index }}</td>
                         <td><span class="severity-badge {{ finding.severity }}">{{ finding.severity }}</span></td>
-                        <td>{{ finding.title }}</td>
-                        <td>{{ finding.type }}</td>
-                        <td>{{ finding.cvss|default('N/A') }}</td>
+                        <td>{{ finding.title|default(finding.vulnerability)|default('N/A') }}</td>
+                        <td>{{ finding.type|default('N/A') }}</td>
+                        <td>{{ finding.cvss|default(finding.cvss_score)|default('N/A') }}</td>
                     </tr>
                     <tr>
                         <td colspan="5" style="padding: 0;">

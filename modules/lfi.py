@@ -193,9 +193,10 @@ class LFIModule(VulnerabilityModule):
                     # Verificar si el payload fue exitoso
                     if self._is_lfi_vulnerable(response.text, payload):
                         finding = {
-                            "vulnerability": "LFI - Local File Inclusion",
+                            "type": "lfi",
                             "severity": "high",
-                            "cvss_score": 7.5,
+                            "title": "LFI - Local File Inclusion",
+                            "cvss": 7.5,
                             "url": test_url,
                             "method": "GET",
                             "parameter": param,
@@ -246,9 +247,10 @@ class LFIModule(VulnerabilityModule):
                     # (En un escenario real, necesitarías un servidor controlado)
                     if self._is_rfi_vulnerable(response, payload):
                         finding = {
-                            "vulnerability": "RFI - Remote File Inclusion",
+                            "type": "rfi",
                             "severity": "critical",
-                            "cvss_score": 9.1,
+                            "title": "RFI - Remote File Inclusion",
+                            "cvss": 9.1,
                             "url": test_url,
                             "method": "GET",
                             "parameter": param,
