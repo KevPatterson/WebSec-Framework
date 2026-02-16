@@ -699,8 +699,18 @@ def main():
         print(f"    - SQLi: sqli_findings.json")
         print(f"    - Consolidado JSON: vulnerability_scan_consolidated.json")
         print(f"    - Reporte HTML: vulnerability_report.html")
-        print(f"\n[!] Abre el reporte HTML en tu navegador para ver el dashboard interactivo!")
-        print(f"    file:///{os.path.abspath(os.path.join(report_dir, 'vulnerability_report.html'))}")
+        print(f"\n{'='*70}")
+        print(f"📊 VISUALIZACIÓN DE REPORTES")
+        print(f"{'='*70}")
+        print(f"\n1. Inicia el servidor Flask:")
+        print(f"   python app.py")
+        print(f"\n2. Abre en tu navegador:")
+        print(f"   http://localhost:5000/")
+        print(f"\n3. O accede directamente a:")
+        if not args.no_crawl:
+            print(f"   - Árbol de crawling: http://localhost:5000/crawl_tree")
+        print(f"   - Reporte HTML: {os.path.abspath(os.path.join(report_dir, 'vulnerability_report.html'))}")
+        print(f"\n{'='*70}\n")
 
     # Ejemplo de integración avanzada con Nuclei
     if args.nuclei:

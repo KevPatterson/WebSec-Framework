@@ -72,10 +72,24 @@
     <div class="tooltip" id="tooltip"></div>
   </div>
   <script>
-    // Cargar crawl_tree.json automáticamente
-    fetch('../reports/crawl_tree.json')
-      .then(response => response.json())
+    // Obtener el scan_id de la URL
+    const pathParts = window.location.pathname.split('/');
+    const scanId = pathParts[pathParts.length - 1];
+    
+    // Cargar crawl_tree.json desde la API
+    fetch(`/api/crawl_tree/${scanId}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
       .then(crawlTree => {
+        // Verificar si hay error en la respuesta
+        if (crawlTree.error) {
+          throw new Error(crawlTree.error);
+        }
+        
         // Construir un superárbol artificial con todos los nodos principales
         function buildTreeAll(crawlTree) {
           function recurse(node) {
@@ -174,7 +188,29 @@
         }
       })
       .catch(err => {
-        document.body.insertAdjacentHTML('beforeend', '<p style="color:red">No se pudo cargar crawl_tree.json: ' + err + '</p>');
+        const container = document.querySelector('.main-container');
+        container.innerHTML = `
+          <h1 style="color: #d32f2f;">❌ Error al cargar el árbol de crawling</h1>
+          <div style="background: #ffebee; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <p style="color: #c62828; font-size: 1.1em;"><strong>Error:</strong> ${err.message}</p>
+            <p style="color: #666; margin-top: 15px;">
+              <strong>Posibles causas:</strong>
+            </p>
+            <ul style="color: #666; text-align: left; max-width: 600px; margin: 10px auto;">
+              <li>El escaneo se ejecutó con la opción <code>--no-crawl</code></li>
+              <li>El archivo crawl_tree.json no existe o está corrupto</li>
+              <li>El servidor Flask no está sirviendo correctamente los archivos</li>
+            </ul>
+            <p style="color: #666; margin-top: 15px;">
+              <strong>Solución:</strong> Ejecuta un nuevo escaneo sin la opción <code>--no-crawl</code>
+            </p>
+            <div style="margin-top: 20px;">
+              <a href="/" style="display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 8px;">
+                ← Volver al inicio
+              </a>
+            </div>
+          </div>
+        `;
       });
   </script>
 </body>
