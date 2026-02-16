@@ -140,7 +140,7 @@ var details = document.getElementById('details-' + index);
 
 ### Test 1: Generación de Reporte HTML
 ```bash
-python test_full_scan_with_pdf.py
+python tests/test_full_scan_with_pdf.py
 ```
 
 **Resultado:**
@@ -199,7 +199,7 @@ python test_full_scan_with_pdf.py
 
 ### Comando de Verificación
 ```bash
-python verify_project.py
+python tests/verify_project.py
 ```
 
 ### Resultado

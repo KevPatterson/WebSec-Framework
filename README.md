@@ -38,6 +38,13 @@ python run.py --help
 - ✅ XSS (Cross-Site Scripting) - CVSS 6.1-7.1
 - ✅ SQLi (SQL Injection) - CVSS 8.6-9.8
 
+### 🔧 Integración con Herramientas Externas
+- ✅ **Nuclei** - Template-based scanner (ProjectDiscovery)
+- ✅ **SQLMap** - SQL Injection detection & exploitation
+- ✅ **OWASP ZAP** - Web application security scanner
+- 🚀 Instalación automática con `install_tools.py`
+- 🎯 Ejecución integrada desde `run.py`
+
 ### 📊 Reportes Profesionales
 - Dashboard interactivo estilo Acunetix/Burp Suite
 - Gráficos Chart.js con distribución de vulnerabilidades
@@ -95,6 +102,8 @@ python run.py https://example.com --no-validation
 
 ## Instalación
 
+### Instalación Básica
+
 ```bash
 # 1. Clonar repositorio
 git clone <repo-url>
@@ -111,6 +120,25 @@ python -m playwright install chromium
 pip install pyyaml
 ```
 
+### Instalación de Herramientas Externas
+
+**Opción 1: Instalación Automática (Recomendado)**
+```bash
+# Instala SQLMap, ZAP y Nuclei automáticamente
+python install_tools.py
+```
+
+**Opción 2: Instalación Manual**
+```bash
+# SQLMap
+git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git tools/sqlmap
+
+# OWASP ZAP - Descargar desde https://www.zaproxy.org/download/
+# Nuclei - Descargar desde https://github.com/projectdiscovery/nuclei/releases
+```
+
+📖 **[Guía Completa de Instalación](INSTALL_TOOLS_WINDOWS.md)** | **[Instalación Rápida](QUICK_INSTALL.md)**
+
 **Nota:** Los binarios de Nuclei, sqlmap y ZAP deben descargarse manualmente y ubicarse en `tools/` o estar en el PATH del sistema.
 
 ## Uso y ejemplos
@@ -124,27 +152,55 @@ python run.py https://example.com
 # Escaneo con exportación a PDF
 python run.py https://example.com --export-pdf
 
+# Filtrar hallazgos de baja confianza
+python run.py https://example.com --filter-low-confidence
+
 # Ver ayuda completa
 python run.py --help
 ```
 
-### Escaneo con Nuclei
+### Escaneo con Herramientas Externas
 
+#### Nuclei
 ```bash
-# Escaneo básico con Nuclei
+# Escaneo básico
 python run.py https://example.com --nuclei
 
 # Filtrar por severidad
 python run.py https://example.com --nuclei --nuclei-severity high,critical
 
-# Filtrar por tags
-python run.py https://example.com --nuclei --nuclei-tags xss,sqli
-
-# Escaneo masivo desde archivo
+# Escaneo masivo
 python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
+```
 
-# Exportar resultados
-python run.py https://example.com --nuclei --nuclei-output report.json --nuclei-output-format json
+#### SQLMap
+```bash
+# Escaneo básico
+python run.py https://example.com/page.php?id=1 --sqlmap
+
+# Configuración avanzada
+python run.py https://example.com/page.php?id=1 --sqlmap \
+    --sqlmap-risk 2 --sqlmap-level 2
+
+# Con POST data
+python run.py https://example.com/login --sqlmap \
+    --sqlmap-data "user=admin&pass=test"
+```
+
+#### OWASP ZAP
+```bash
+# Escaneo rápido
+python run.py https://example.com --zap --zap-mode quick
+
+# Escaneo completo
+python run.py https://example.com --zap --zap-mode full \
+    --zap-spider --zap-ajax-spider
+```
+
+#### Escaneo Combinado
+```bash
+# Todas las herramientas
+python run.py https://example.com --nuclei --sqlmap --zap
 ```
 
 ### Uso Programático
@@ -247,8 +303,8 @@ python run.py --help
 ```
 
 ### Ejemplos de Código
-- **[example_usage.py](example_usage.py)** - Ejemplo de uso integrado del framework
-- **[test_headers.py](test_headers.py)** - Script de prueba del módulo Security Headers
+- **[tests/example_usage.py](tests/example_usage.py)** - Ejemplo de uso integrado del framework
+- **[tests/test_headers.py](tests/test_headers.py)** - Script de prueba del módulo Security Headers
 
 ## Herramientas externas utilizadas
 
@@ -412,12 +468,87 @@ Cada módulo implementa la interfaz `VulnerabilityModule` con métodos `scan()` 
 
 ## Integración con herramientas externas
 
-El framework integra y orquesta herramientas líderes:
-- **Nuclei**: Para escaneo basado en templates y detección rápida de vulnerabilidades conocidas.
-- **sqlmap**: Para explotación y detección avanzada de SQLi.
-- **OWASP ZAP**: Para escaneo automatizado y pruebas de fuzzing.
+El framework integra y orquesta herramientas líderes de seguridad:
 
-> **Nota:** Los binarios de estas herramientas deben descargarse manualmente y ubicarse en la carpeta `tools/` o estar en el PATH del sistema.
+### Nuclei - Template-based Scanner
+Escaneo rápido basado en templates para detectar vulnerabilidades conocidas.
+
+```bash
+# Escaneo básico con Nuclei
+python run.py https://example.com --nuclei
+
+# Filtrar por severidad
+python run.py https://example.com --nuclei --nuclei-severity high,critical
+
+# Filtrar por tags
+python run.py https://example.com --nuclei --nuclei-tags xss,sqli
+
+# Escaneo masivo desde archivo
+python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
+```
+
+### SQLMap - SQL Injection Scanner
+Detección y explotación avanzada de SQL Injection.
+
+```bash
+# Escaneo básico con SQLMap
+python run.py https://example.com/page.php?id=1 --sqlmap
+
+# Configuración avanzada
+python run.py https://example.com/page.php?id=1 --sqlmap \
+    --sqlmap-risk 2 --sqlmap-level 2 --sqlmap-threads 2
+
+# Con POST data
+python run.py https://example.com/login --sqlmap \
+    --sqlmap-data "user=admin&pass=test"
+
+# Con tamper scripts (evasión de WAF)
+python run.py https://example.com/page.php?id=1 --sqlmap \
+    --sqlmap-tamper "space2comment,between"
+```
+
+### OWASP ZAP - Web Application Scanner
+Escaneo automatizado de vulnerabilidades web.
+
+```bash
+# Escaneo rápido con ZAP
+python run.py https://example.com --zap --zap-mode quick
+
+# Escaneo completo con spider
+python run.py https://example.com --zap --zap-mode full \
+    --zap-spider --zap-ajax-spider
+
+# Escaneo de API
+python run.py https://api.example.com --zap --zap-mode api
+```
+
+### Escaneo Combinado
+Ejecuta múltiples herramientas en un solo comando:
+
+```bash
+# Escaneo completo con todas las herramientas
+python run.py https://example.com --nuclei --sqlmap --zap
+
+# Con configuración personalizada
+python run.py https://example.com \
+    --nuclei --nuclei-severity high,critical \
+    --sqlmap --sqlmap-risk 2 \
+    --zap --zap-mode baseline
+```
+
+### Instalación de Herramientas
+
+**Instalación automática (recomendado):**
+```bash
+python install_tools.py
+```
+
+**Instalación manual:**
+- **Nuclei**: https://github.com/projectdiscovery/nuclei/releases
+- **SQLMap**: https://github.com/sqlmapproject/sqlmap
+- **OWASP ZAP**: https://www.zaproxy.org/download/
+
+📖 **[Guía Completa de Instalación](INSTALL_TOOLS_WINDOWS.md)** | **[Documentación de Integraciones](docs/EXTERNAL_INTEGRATIONS.md)**
 
 ## Configuración y personalización
 
@@ -636,7 +767,7 @@ websec-framework/
   - 600+ líneas de código en `core/validator.py`
 - ✅ **Integración con Scanner**: Validación automática de hallazgos
 - ✅ **Documentación completa**: docs/VALIDATION_SYSTEM.md
-- ✅ **Script de prueba**: test_validation_system.py
+- ✅ **Script de prueba**: tests/test_validation_system.py
 
 ### v0.4.0 (Febrero 2026)
 - ✅ **Módulo CSRF completo**: Detección de Cross-Site Request Forgery
@@ -661,7 +792,7 @@ websec-framework/
   - CVSS: 7.5-9.1 (High-Critical)
 - ✅ **Payloads LFI ampliados**: 40+ payloads en payloads/lfi.txt
 - ✅ **Documentación completa**: docs/CSRF_CORS_LFI_MODULES.md
-- ✅ **Script de prueba**: test_csrf_cors_lfi.py
+- ✅ **Script de prueba**: tests/test_csrf_cors_lfi.py
 
 ### v0.3.0 (Febrero 2026)
 - ✅ **Reportes HTML Profesionales**: Estilo Acunetix/Burp Suite

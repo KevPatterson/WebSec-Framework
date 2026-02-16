@@ -113,7 +113,7 @@
    - Hallazgos típicos
    - Referencias y recomendaciones
 
-2. **test_csrf_cors_lfi.py** (80 líneas)
+2. **tests/test_csrf_cors_lfi.py** (80 líneas)
    - Script de prueba integrado
    - Demostración de uso
    - Resumen de resultados
@@ -125,7 +125,7 @@
 ### Actualizaciones
 - ✅ README.md actualizado con nuevos módulos
 - ✅ QUICKSTART.md con ejemplos de uso
-- ✅ example_usage.py con función de demostración
+- ✅ tests/example_usage.py con función de demostración
 - ✅ payloads/lfi.txt ampliado (40+ payloads)
 
 ---
@@ -162,7 +162,7 @@ scanner.run()
 
 ```bash
 # Ejecutar script de prueba
-python test_csrf_cors_lfi.py
+python tests/test_csrf_cors_lfi.py
 
 # Resultados en:
 # reports/test_csrf_cors_lfi_TIMESTAMP/
@@ -239,7 +239,7 @@ python test_csrf_cors_lfi.py
 
 **Archivo:** `core/validator.py` (600+ líneas)  
 **Documentación:** `docs/VALIDATION_SYSTEM.md`  
-**Test:** `test_validation_system.py`
+**Test:** `tests/test_validation_system.py`
 
 ### Scoring de Confianza
 

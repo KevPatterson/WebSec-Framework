@@ -1,0 +1,1 @@
+http://testphp.vulnweb.com/artists.php?artist=1 (GET)  # "C:\Me\School\Projects\websec-framework (mini acunetix)\tools\sqlmap\sqlmapproject-sqlmap-5a097c7\sqlmap.py" --batch --output-dir=tmp_sqlmap\scan_20260216_105736 -u http://testphp.vulnweb.com/artists.php?artist=1 --risk=1 --level=1 --threads=1 --random-agent --flush-session --answers=follow=Y

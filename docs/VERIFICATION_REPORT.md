@@ -101,12 +101,12 @@ El proyecto WebSec Framework ha sido completamente revisado y verificado. Todos 
 - [x] docs/PLAN_DESARROLLO.md - Hoja de ruta
 
 ### 9. Scripts de Prueba ✅
-- [x] test_simple.py - Test básico completo
-- [x] test_headers.py - Test módulo Headers
-- [x] test_xss_sqli.py - Test módulos XSS/SQLi
-- [x] test_pdf_export.py - Test exportación PDF ⭐
-- [x] example_usage.py - Ejemplo de uso
-- [x] verify_project.py - Verificación completa ⭐
+- [x] tests/test_simple.py - Test básico completo
+- [x] tests/test_headers.py - Test módulo Headers
+- [x] tests/test_xss_sqli.py - Test módulos XSS/SQLi
+- [x] tests/test_pdf_export.py - Test exportación PDF ⭐
+- [x] tests/example_usage.py - Ejemplo de uso
+- [x] tests/verify_project.py - Verificación completa ⭐
 
 ### 10. Herramientas Externas ✅
 - [x] wkhtmltopdf - Exportación PDF (tools/wkhtmltopdf/)
@@ -173,13 +173,13 @@ El proyecto WebSec Framework ha sido completamente revisado y verificado. Todos 
 
 ### Test 1: Verificación Completa del Proyecto
 ```bash
-python verify_project.py
+python tests/verify_project.py
 ```
 **Resultado:** ✅ 51/51 verificaciones exitosas (100%)
 
 ### Test 2: Escaneo Simple
 ```bash
-python test_simple.py
+python tests/test_simple.py
 ```
 **Resultado:** ✅ 10 hallazgos detectados correctamente
 - Headers: 9 hallazgos
@@ -188,13 +188,13 @@ python test_simple.py
 
 ### Test 3: Exportación PDF
 ```bash
-python test_pdf_export.py
+python tests/test_pdf_export.py
 ```
 **Resultado:** ✅ PDF generado exitosamente (133.3 KB)
 
 ### Test 4: Ejemplo de Uso
 ```bash
-python example_usage.py
+python tests/example_usage.py
 ```
 **Resultado:** ✅ 5 hallazgos en GitHub.com
 
@@ -223,12 +223,12 @@ Todos los archivos Python han sido verificados sin errores:
 ✅ modules/cors.py - No diagnostics found
 ✅ modules/auth.py - No diagnostics found
 ✅ modules/lfi.py - No diagnostics found
-✅ test_simple.py - No diagnostics found
-✅ test_headers.py - No diagnostics found
-✅ test_xss_sqli.py - No diagnostics found
-✅ test_pdf_export.py - No diagnostics found
-✅ example_usage.py - No diagnostics found
-✅ verify_project.py - No diagnostics found
+✅ tests/test_simple.py - No diagnostics found
+✅ tests/test_headers.py - No diagnostics found
+✅ tests/test_xss_sqli.py - No diagnostics found
+✅ tests/test_pdf_export.py - No diagnostics found
+✅ tests/example_usage.py - No diagnostics found
+✅ tests/verify_project.py - No diagnostics found
 ```
 
 ---

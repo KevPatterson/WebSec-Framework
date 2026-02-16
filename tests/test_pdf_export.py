@@ -43,7 +43,7 @@ def test_pdf_export():
     
     if not html_file:
         print("✗ No se encontró ningún reporte HTML para probar")
-        print("  Ejecuta primero: python test_simple.py")
+        print("  Ejecuta primero: python tests/test_simple.py")
         return False
     
     print(f"✓ Reporte HTML encontrado: {html_file}")

@@ -231,7 +231,7 @@ Distribución por confianza:
 
 ```bash
 # Ejecutar pruebas del sistema de validación
-python test_validation_system.py
+python tests/test_validation_system.py
 
 # Resultados en:
 # - reports/validation_test_results.json

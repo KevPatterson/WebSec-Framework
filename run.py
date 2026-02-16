@@ -3,6 +3,10 @@ Orquestador principal del framework websec-framework.
 """
 import argparse
 import os
+import sys
+import json
+import tempfile
+from jinja2 import Template
 from core.crawler import Crawler
 from core.fingerprint import Fingerprinter
 from core.scanner import Scanner
@@ -20,6 +24,8 @@ from modules.lfi import LFIModule
 
 
 from core.external.nuclei_runner import NucleiRunner
+from core.external.sqlmap_runner import SqlmapRunner
+from core.external.zap_runner import ZapRunner
 
 
 def print_help():
@@ -68,10 +74,10 @@ CARACTERISTICAS:
    - Estadisticas detalladas de validacion
 
 SCORING DE CONFIANZA:
-   🟢 90-100% (Muy Alta)  - Evidencia solida, reportar inmediatamente
-   🟡 70-89%  (Alta)      - Evidencia clara, reportar con prioridad
-   🟠 60-69%  (Media)     - Evidencia moderada, verificar manualmente
-   🔴 0-59%   (Baja)      - Evidencia debil, requiere validacion manual
+   [ALTA]   90-100% (Muy Alta)  - Evidencia solida, reportar inmediatamente
+   [ALTA]   70-89%  (Alta)      - Evidencia clara, reportar con prioridad
+   [MEDIA]  60-69%  (Media)     - Evidencia moderada, verificar manualmente
+   [BAJA]   0-59%   (Baja)      - Evidencia debil, requiere validacion manual
 
 VALIDACION POR TIPO:
    SQLi:    Errores SQL + DBMS + Baseline + Tipo (error/boolean)
@@ -88,7 +94,7 @@ ESTADISTICAS GENERADAS:
 
 RESULTADOS:
    - Reduccion de falsos positivos: ~76%
-   - Precision mejorada: 67% → 92%
+   - Precision mejorada: 67% a 92%
    - Ahorro de tiempo en validacion manual: ~75%
 
 Documentacion completa: docs/VALIDATION_SYSTEM.md
@@ -99,7 +105,7 @@ MODULOS DE VULNERABILIDADES
 
 El framework ejecuta automaticamente los siguientes modulos:
 
-[✅] CSRF - CROSS-SITE REQUEST FORGERY (Implementado)
+[OK] CSRF - CROSS-SITE REQUEST FORGERY (Implementado)
    Detecta vulnerabilidades de falsificacion de peticiones entre sitios
 
    Detecta:
@@ -112,7 +118,7 @@ El framework ejecuta automaticamente los siguientes modulos:
    Severidad: HIGH | CVSS: 8.8 | CWE-352 | OWASP A01:2021
    Salida: csrf_findings.json con detalles de formularios y cookies
 
-[✅] CORS - MISCONFIGURATION (Implementado)
+[OK] CORS - MISCONFIGURATION (Implementado)
    Analisis profundo de configuraciones Cross-Origin Resource Sharing
 
    Detecta:
@@ -126,7 +132,7 @@ El framework ejecuta automaticamente los siguientes modulos:
    Severidad: HIGH-CRITICAL | CVSS: 7.5-9.1
    Salida: cors_findings.json con evidencia de configuraciones
 
-[✅] LFI/RFI - FILE INCLUSION (Implementado)
+[OK] LFI/RFI - FILE INCLUSION (Implementado)
    Detecta vulnerabilidades de inclusion de archivos locales y remotos
 
    Detecta:
@@ -141,7 +147,7 @@ El framework ejecuta automaticamente los siguientes modulos:
    Salida: lfi_findings.json con payload y evidencia
    Payloads: 40+ en payloads/lfi.txt
 
-[✅] SECURITY HEADERS (Implementado)
+[OK] SECURITY HEADERS (Implementado)
    Analisis profesional de headers HTTP segun estandares OWASP
 
    Detecta:
@@ -155,7 +161,7 @@ El framework ejecuta automaticamente los siguientes modulos:
    Severidades: HIGH, MEDIUM, LOW, INFO
    Salida: headers_findings.json con CVSS scoring y referencias OWASP
 
-[✅] XSS - CROSS-SITE SCRIPTING (Implementado)
+[OK] XSS - CROSS-SITE SCRIPTING (Implementado)
    Deteccion de XSS: Reflected, Stored y DOM-based
 
    Detecta:
@@ -169,7 +175,7 @@ El framework ejecuta automaticamente los siguientes modulos:
    Salida: xss_findings.json con payload y evidencia
    CVSS: 7.1 (Reflected), 6.1 (DOM) | CWE-79 | OWASP A03:2021
 
-[✅] SQLi - SQL INJECTION (Implementado)
+[OK] SQLi - SQL INJECTION (Implementado)
    Deteccion de SQL Injection con integracion SQLMap opcional
 
    Detecta:
@@ -254,6 +260,40 @@ INTEGRACION CON NUCLEI
                           Formato: json, yaml, html, pdf, csv (por defecto: json)
 
 ================================================================================
+INTEGRACION CON SQLMAP
+================================================================================
+
+    --sqlmap              Ejecuta SQLMap sobre el objetivo
+    --sqlmap-data <data>  POST data para SQLMap (ej: "user=admin&pass=test")
+    --sqlmap-risk <n>     Nivel de riesgo (1-3, por defecto: 2)
+    --sqlmap-level <n>    Nivel de tests (1-5, por defecto: 2)
+    --sqlmap-threads <n>  Numero de threads (por defecto: 1)
+    --sqlmap-technique <t>
+                          Tecnicas SQL (BEUSTQ, por defecto: todas)
+    --sqlmap-dbms <dbms>  DBMS especifico (MySQL, PostgreSQL, MSSQL, etc.)
+    --sqlmap-tamper <scripts>
+                          Scripts de tamper separados por coma
+    --sqlmap-timeout <n>  Timeout en segundos (por defecto: 300)
+    --sqlmap-output <archivo>
+                          Guardar salida de SQLMap en archivo JSON
+
+================================================================================
+INTEGRACION CON OWASP ZAP
+================================================================================
+
+    --zap                 Ejecuta OWASP ZAP sobre el objetivo
+    --zap-mode <mode>     Modo de escaneo: quick, baseline, full, api
+                          (por defecto: quick)
+    --zap-spider          Activar spider tradicional (por defecto: True)
+    --zap-ajax-spider     Activar AJAX spider (por defecto: False)
+    --zap-active-scan     Activar escaneo activo (por defecto: True)
+    --zap-timeout <n>     Timeout en segundos (por defecto: 600)
+    --zap-output <archivo>
+                          Guardar salida de ZAP en archivo
+    --zap-format <fmt>    Formato de salida: json, xml, html
+                          (por defecto: json)
+
+================================================================================
 FLUJO DE EJECUCION
 ================================================================================
 
@@ -306,6 +346,21 @@ Escaneo con Nuclei (severidad alta):
 Escaneo masivo con Nuclei:
     python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
 
+Escaneo con SQLMap (SQL Injection):
+    python run.py https://example.com/page.php?id=1 --sqlmap --sqlmap-risk 2 --sqlmap-level 2
+
+Escaneo con SQLMap y POST data:
+    python run.py https://example.com/login --sqlmap --sqlmap-data "user=admin&pass=test"
+
+Escaneo con ZAP (modo rapido):
+    python run.py https://example.com --zap --zap-mode quick
+
+Escaneo con ZAP (modo completo):
+    python run.py https://example.com --zap --zap-mode full --zap-ajax-spider
+
+Escaneo combinado (Nuclei + SQLMap + ZAP):
+    python run.py https://example.com --nuclei --sqlmap --zap
+
 Escaneo con headers personalizados:
     python run.py https://example.com --nuclei ^
         --nuclei-header "Authorization: Bearer TOKEN" ^
@@ -349,16 +404,16 @@ PRUEBAS Y VALIDACION
 ================================================================================
 
 Probar sistema de validacion:
-    python test_validation_system.py
+    python tests/test_validation_system.py
 
 Probar modulos CSRF, CORS, LFI:
-    python test_csrf_cors_lfi.py
+    python tests/test_csrf_cors_lfi.py
 
 Probar XSS y SQLi:
-    python test_xss_sqli.py
+    python tests/test_xss_sqli.py
 
 Escaneo completo con PDF:
-    python test_full_scan_with_pdf.py
+    python tests/test_full_scan_with_pdf.py
 
 ================================================================================
 NOTAS PROFESIONALES
@@ -396,7 +451,6 @@ FEATURES_SUMMARY.md             - Resumen de todas las funcionalidades
     print(help_text)
 
 def main():
-    import sys
     if '--help' in sys.argv or '-h' in sys.argv:
         print_help()
         return
@@ -423,6 +477,28 @@ def main():
     parser.add_argument("--nuclei-templates", help="Ruta a templates personalizados de Nuclei")
     parser.add_argument("--nuclei-update-templates", action="store_true", help="Actualiza los templates de Nuclei automáticamente")
     parser.add_argument("--nuclei-output", help="Guardar salida JSON de Nuclei en archivo")
+    
+    # Opciones para SQLMap
+    parser.add_argument("--sqlmap", action="store_true", help="Ejecutar SQLMap sobre el objetivo")
+    parser.add_argument("--sqlmap-data", help="POST data para SQLMap (ej: 'user=admin&pass=test')")
+    parser.add_argument("--sqlmap-risk", type=int, default=2, help="Nivel de riesgo (1-3, por defecto: 2)")
+    parser.add_argument("--sqlmap-level", type=int, default=2, help="Nivel de tests (1-5, por defecto: 2)")
+    parser.add_argument("--sqlmap-threads", type=int, default=1, help="Número de threads (por defecto: 1)")
+    parser.add_argument("--sqlmap-technique", help="Técnicas SQL (BEUSTQ, por defecto: todas)")
+    parser.add_argument("--sqlmap-dbms", help="DBMS específico (MySQL, PostgreSQL, MSSQL, etc.)")
+    parser.add_argument("--sqlmap-tamper", help="Scripts de tamper separados por coma")
+    parser.add_argument("--sqlmap-timeout", type=int, default=300, help="Timeout en segundos (por defecto: 300)")
+    parser.add_argument("--sqlmap-output", help="Guardar salida de SQLMap en archivo JSON")
+    
+    # Opciones para ZAP
+    parser.add_argument("--zap", action="store_true", help="Ejecutar OWASP ZAP sobre el objetivo")
+    parser.add_argument("--zap-mode", default="quick", choices=["quick", "baseline", "full", "api"], help="Modo de escaneo (por defecto: quick)")
+    parser.add_argument("--zap-spider", action="store_true", default=True, help="Activar spider tradicional (por defecto: True)")
+    parser.add_argument("--zap-ajax-spider", action="store_true", help="Activar AJAX spider (por defecto: False)")
+    parser.add_argument("--zap-active-scan", action="store_true", default=True, help="Activar escaneo activo (por defecto: True)")
+    parser.add_argument("--zap-timeout", type=int, default=600, help="Timeout en segundos (por defecto: 600)")
+    parser.add_argument("--zap-output", help="Guardar salida de ZAP en archivo")
+    parser.add_argument("--zap-format", default="json", choices=["json", "xml", "html"], help="Formato de salida (por defecto: json)")
 
     args = parser.parse_args()
 
@@ -577,11 +653,6 @@ def main():
         
         # Guardar resultados si se especificó output
         if args.nuclei_output:
-            import os
-            import json
-            import tempfile
-            from jinja2 import Template
-            
             fmt = args.nuclei_output_format
             try:
                 if fmt == 'json':
@@ -621,7 +692,6 @@ def main():
                     with open(args.nuclei_output, 'w', encoding='utf-8') as f:
                         f.write(html)
                 elif fmt == 'pdf':
-                    import sys
                     template_path = os.path.join(os.path.dirname(__file__), 'templates', 'nuclei_report.html')
                     with open(template_path, 'r', encoding='utf-8') as tplf:
                         html_template = tplf.read()
@@ -699,6 +769,115 @@ def main():
                 template = f.get('template', '-')
                 tags = ','.join(f.get('info', {}).get('tags', []))
                 print(f"  - {name} | Template: {template} | Tags: {tags}")
+
+    # Integración con SQLMap
+    if args.sqlmap:
+        print("\n=== Ejecutando SQLMap ===")
+        sqlmap_config = {
+            "sqlmap_path": "tools/sqlmap/sqlmapproject-sqlmap-5a097c7/sqlmap.py",
+            "sqlmap_timeout": args.sqlmap_timeout
+        }
+        sqlmap = SqlmapRunner(sqlmap_config)
+        
+        # Parsear tamper scripts si se especificaron
+        tamper = [t.strip() for t in args.sqlmap_tamper.split(",")] if args.sqlmap_tamper else None
+        
+        print(f"[*] Target: {args.target}")
+        print(f"[*] Risk: {args.sqlmap_risk}, Level: {args.sqlmap_level}, Threads: {args.sqlmap_threads}")
+        if args.sqlmap_data:
+            print(f"[*] POST Data: {args.sqlmap_data}")
+        
+        try:
+            sqlmap_findings = sqlmap.run(
+                target=args.target,
+                data=args.sqlmap_data,
+                risk=args.sqlmap_risk,
+                level=args.sqlmap_level,
+                threads=args.sqlmap_threads,
+                technique=args.sqlmap_technique,
+                dbms=args.sqlmap_dbms,
+                tamper=tamper,
+                timeout=args.sqlmap_timeout
+            )
+            
+            print(f"\n[+] SQLMap completado: {len(sqlmap_findings)} hallazgos")
+            
+            if sqlmap_findings:
+                print("\n=== Hallazgos de SQLMap ===")
+                for i, finding in enumerate(sqlmap_findings, 1):
+                    print(f"[{i}] {finding.get('type', 'Unknown')}")
+                    print(f"    Severidad: {finding.get('severity', 'N/A')}")
+                    if 'description' in finding:
+                        desc = finding['description'][:80]
+                        print(f"    Descripción: {desc}...")
+            
+            # Guardar resultados si se especificó
+            if args.sqlmap_output:
+                with open(args.sqlmap_output, 'w', encoding='utf-8') as f:
+                    json.dump(sqlmap_findings, f, indent=2, ensure_ascii=False)
+                print(f"[+] Resultados de SQLMap guardados en {args.sqlmap_output}")
+        
+        except Exception as e:
+            print(f"[!] Error ejecutando SQLMap: {e}")
+
+    # Integración con OWASP ZAP
+    if args.zap:
+        print("\n=== Ejecutando OWASP ZAP ===")
+        zap_config = {
+            "zap_path": "tools/zap/zap.bat",
+            "zap_timeout": args.zap_timeout
+        }
+        zap = ZapRunner(zap_config)
+        
+        print(f"[*] Target: {args.target}")
+        print(f"[*] Modo: {args.zap_mode}")
+        print(f"[*] Spider: {args.zap_spider}, AJAX Spider: {args.zap_ajax_spider}")
+        print(f"[*] Active Scan: {args.zap_active_scan}")
+        print("\n[!] NOTA: ZAP requiere Java 11+ instalado")
+        print("[!] ZAP puede tardar varios minutos en iniciar...")
+        
+        try:
+            zap_findings = zap.run(
+                target=args.target,
+                scan_mode=args.zap_mode,
+                output_format=args.zap_format,
+                spider=args.zap_spider,
+                ajax_spider=args.zap_ajax_spider,
+                active_scan=args.zap_active_scan,
+                timeout=args.zap_timeout,
+                output_file=args.zap_output
+            )
+            
+            print(f"\n[+] ZAP completado: {len(zap_findings)} hallazgos")
+            
+            if zap_findings:
+                # Agrupar por severidad
+                from collections import defaultdict
+                by_severity = defaultdict(list)
+                for finding in zap_findings:
+                    sev = finding.get('severity', 'unknown')
+                    by_severity[sev].append(finding)
+                
+                print("\n=== Hallazgos de ZAP por Severidad ===")
+                for sev in ['critical', 'high', 'medium', 'low', 'info']:
+                    if sev in by_severity:
+                        print(f"[+] {sev.upper()}: {len(by_severity[sev])} hallazgos")
+                
+                print("\n=== Primeros 5 Hallazgos de ZAP ===")
+                for i, finding in enumerate(zap_findings[:5], 1):
+                    print(f"[{i}] {finding.get('type', 'Unknown')}")
+                    print(f"    Severidad: {finding.get('severity', 'N/A')}")
+                    if 'url' in finding:
+                        url = finding['url'][:60]
+                        print(f"    URL: {url}...")
+            
+            # Los resultados ya se guardaron si se especificó output_file
+            if args.zap_output:
+                print(f"[+] Resultados de ZAP guardados en {args.zap_output}")
+        
+        except Exception as e:
+            print(f"[!] Error ejecutando ZAP: {e}")
+            print(f"[!] Asegúrate de tener Java 11+ instalado: https://adoptium.net/")
 
 if __name__ == "__main__":
     main()

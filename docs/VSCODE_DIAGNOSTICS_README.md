@@ -32,15 +32,15 @@ VS Code interpreta `{{ scan_info|tojson|safe }}` como sintaxis JavaScript invál
 
 ```bash
 # Test 1: Generación de reportes
-python test_simple.py
+python tests/test_simple.py
 # Resultado: ✅ HTML generado (65,771 bytes)
 
 # Test 2: Exportación PDF
-python test_full_scan_with_pdf.py
+python tests/test_full_scan_with_pdf.py
 # Resultado: ✅ PDF generado (311,280 bytes)
 
 # Test 3: Verificación completa
-python verify_project.py
+python tests/verify_project.py
 # Resultado: ✅ 51/51 verificaciones exitosas (100%)
 ```
 
@@ -125,13 +125,13 @@ Ejecuta los tests:
 
 ```bash
 # Test rápido
-python test_simple.py
+python tests/test_simple.py
 
 # Test completo con PDF
-python test_full_scan_with_pdf.py
+python tests/test_full_scan_with_pdf.py
 
 # Verificación del proyecto
-python verify_project.py
+python tests/verify_project.py
 ```
 
 Si todos los tests pasan (✅), el código está funcionando correctamente, independientemente de lo que VS Code reporte.

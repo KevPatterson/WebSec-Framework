@@ -4,6 +4,94 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 
 ---
 
+## [v0.6.0] - 2026-02-16
+
+### 🎉 Añadido
+
+#### Integraciones Externas Completas
+
+##### SQLMap Runner Profesional
+- **core/external/sqlmap_runner.py** (300+ líneas): Integración completa con SQLMap
+  - Detección automática de binario multiplataforma (Python script y binarios)
+  - Soporte para múltiples targets (lista de URLs)
+  - Configuración avanzada: risk, level, threads, technique, DBMS
+  - POST data, cookies, headers personalizados
+  - Tamper scripts para evasión de WAF
+  - Parsing robusto de resultados (logs, CSV, stdout)
+  - Timeout configurable
+  - Validación automática de permisos en Linux
+
+##### OWASP ZAP Runner Profesional
+- **core/external/zap_runner.py** (400+ líneas): Integración completa con ZAP
+  - Detección automática de binario multiplataforma
+  - 4 modos de escaneo: quick, baseline, full, api
+  - Soporte para spider tradicional y AJAX spider
+  - Escaneo activo y pasivo
+  - Múltiples formatos de salida: JSON, XML, HTML, Markdown
+  - Parsing robusto con mapeo de severidades
+  - Soporte para contextos y autenticación
+  - Validación automática de permisos en Linux
+
+##### Nuclei Runner (Ya existente - Mejorado)
+- Documentación completa integrada
+- Patrón de diseño consistente con otros runners
+
+#### Testing y Documentación
+- **tests/test_external_tools.py** (200+ líneas): Suite de pruebas completa
+  - Tests individuales para SQLMap y ZAP
+  - Test de integración combinada
+  - Detección automática de herramientas instaladas
+  - Reporte detallado de resultados
+- **docs/EXTERNAL_INTEGRATIONS.md** (600+ líneas): Documentación exhaustiva
+  - Guías de instalación para cada herramienta
+  - Ejemplos de uso completos
+  - Troubleshooting detallado
+  - Mejores prácticas
+  - Referencia de parámetros
+
+### 🔧 Características Técnicas
+
+#### SQLMap Runner
+- Búsqueda inteligente en: PATH, raíz del proyecto, tools/sqlmap/, windows/linux/
+- Soporte para Python scripts (.py) y binarios compilados
+- Parámetros avanzados: technique (BEUSTQ), tamper scripts, method HTTP
+- Parsing de múltiples formatos: logs, CSV, stdout
+- Detección de inyecciones con tipo, título y payload
+
+#### ZAP Runner
+- Búsqueda inteligente: zap.sh, zap.bat, zap.exe en múltiples ubicaciones
+- Modos de escaneo especializados:
+  - **Quick**: Escaneo rápido para pruebas iniciales
+  - **Baseline**: Escaneo pasivo para CI/CD
+  - **Full**: Escaneo completo con spider y ataques activos
+  - **API**: Escaneo especializado para APIs REST/OpenAPI
+- Parsing de JSON, XML y HTML
+- Mapeo de severidades: 0-4 → info/low/medium/high/critical
+- Extracción de CWE, WASC, referencias y soluciones
+
+### 📊 Resultados
+
+#### Compatibilidad
+- ✅ Windows (cmd/PowerShell)
+- ✅ Linux (bash)
+- ✅ macOS (zsh/bash)
+
+#### Formatos Soportados
+- ✅ JSON (parsing completo)
+- ✅ XML (parsing con ElementTree)
+- ✅ HTML (extracción básica)
+- ✅ CSV (SQLMap)
+- ✅ Logs (SQLMap)
+
+#### Robustez
+- ✅ Detección automática de binarios
+- ✅ Validación de permisos
+- ✅ Manejo de timeouts
+- ✅ Parsing de errores
+- ✅ Logging detallado
+
+---
+
 ## [v0.5.0] - 2026-02-15
 
 ### 🎉 Añadido
@@ -31,7 +119,7 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 #### Documentación
 - **docs/VALIDATION_SYSTEM.md** (500+ líneas): Documentación técnica completa
 - **VALIDATION_SUMMARY.md**: Resumen ejecutivo del sistema
-- **test_validation_system.py** (200+ líneas): Script de prueba completo
+- **tests/test_validation_system.py** (200+ líneas): Script de prueba completo
 
 ### 🔧 Modificado
 
@@ -83,7 +171,7 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 
 #### Documentación
 - **docs/CSRF_CORS_LFI_MODULES.md** (350 líneas): Documentación completa
-- **test_csrf_cors_lfi.py** (80 líneas): Script de prueba
+- **tests/test_csrf_cors_lfi.py** (80 líneas): Script de prueba
 - **FEATURES_SUMMARY.md**: Resumen de funcionalidades
 
 ### 🔧 Modificado
@@ -91,7 +179,7 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 - **payloads/lfi.txt**: Ampliado a 40+ payloads
 - **README.md**: Actualizado con nuevos módulos
 - **QUICKSTART.md**: Ejemplos de uso añadidos
-- **example_usage.py**: Función de demostración
+- **tests/example_usage.py**: Función de demostración
 
 ---
 
@@ -188,36 +276,38 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 ## Estadísticas Totales
 
 ### Código
-- **Líneas de código**: 5500+
-- **Archivos**: 28+
+- **Líneas de código**: 6500+
+- **Archivos**: 31+
 - **Módulos de vulnerabilidad**: 6
+- **Integraciones externas**: 3 (Nuclei, SQLMap, ZAP)
 - **Payloads**: 200+
 
 ### Funcionalidades
 - ✅ 6 módulos de vulnerabilidad completos
 - ✅ Sistema de validación robusto
 - ✅ Reportes HTML/PDF profesionales
-- ✅ Integración con Nuclei, SQLMap, ZAP
+- ✅ 3 integraciones externas profesionales (Nuclei, SQLMap, ZAP)
 - ✅ Crawling inteligente
 - ✅ Fingerprinting tecnológico
+- ✅ Soporte multiplataforma (Windows/Linux/macOS)
 
 ### Documentación
-- **Líneas de documentación**: 1500+
-- **Archivos de documentación**: 8
-- **Scripts de prueba**: 5
+- **Líneas de documentación**: 2200+
+- **Archivos de documentación**: 9
+- **Scripts de prueba**: 6
 
 ---
 
 ## Roadmap Futuro
 
-### v0.6.0 (Planificado)
+### v0.7.0 (Planificado)
 - [ ] Módulo XXE (XML External Entity)
 - [ ] Módulo SSRF (Server-Side Request Forgery)
 - [ ] Módulo Command Injection
 - [ ] Machine Learning para scoring de confianza
 - [ ] Dashboard web en tiempo real
 
-### v0.7.0 (Planificado)
+### v0.8.0 (Planificado)
 - [ ] Módulo Authentication Bypass
 - [ ] Módulo Session Management
 - [ ] Módulo Insecure Deserialization

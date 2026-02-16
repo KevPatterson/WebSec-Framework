@@ -300,7 +300,7 @@ scanner.run()
 
 ```bash
 # Ejecutar script de prueba
-python test_csrf_cors_lfi.py
+python tests/test_csrf_cors_lfi.py
 
 # Los resultados se guardan en:
 # - reports/test_csrf_cors_lfi_TIMESTAMP/csrf_findings.json
@@ -354,7 +354,7 @@ scanner.run()
 
 ```bash
 # Ejecutar pruebas de validación
-python test_validation_system.py
+python tests/test_validation_system.py
 
 # Ver resultados en:
 # reports/validation_test_results.json

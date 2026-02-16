@@ -174,11 +174,11 @@ def main():
     # 9. Verificar scripts de prueba
     print_header("9. SCRIPTS DE PRUEBA")
     test_files = [
-        "test_simple.py",
-        "test_headers.py",
-        "test_xss_sqli.py",
-        "test_pdf_export.py",
-        "example_usage.py"
+        "tests/test_simple.py",
+        "tests/test_headers.py",
+        "tests/test_xss_sqli.py",
+        "tests/test_pdf_export.py",
+        "tests/example_usage.py"
     ]
     
     for file in test_files:

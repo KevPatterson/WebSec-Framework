@@ -289,7 +289,7 @@ if cache_key in baseline_cache:
    - Algoritmos explicados
    - Mejores prácticas
 
-3. **test_validation_system.py** (200+ líneas)
+3. **tests/test_validation_system.py** (200+ líneas)
    - Casos de prueba completos
    - Ejemplos de validación
    - Comparación baseline
