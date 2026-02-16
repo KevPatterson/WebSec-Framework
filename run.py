@@ -535,6 +535,7 @@ def main():
     parser.add_argument("--config", help="Ruta a archivo de configuración", default="config/target.yaml")
     parser.add_argument("--export-pdf", action="store_true", help="Exportar reporte HTML a PDF (requiere wkhtmltopdf)")
     parser.add_argument("--no-validation", action="store_true", help="Deshabilitar sistema de validación automática")
+    parser.add_argument("--no-crawl", action="store_true", help="Deshabilitar crawling (solo escaneo de vulnerabilidades)")
     parser.add_argument("--filter-low-confidence", action="store_true", help="Filtrar hallazgos con confianza < 60%%")
     parser.add_argument("--nuclei", action="store_true", help="Ejecutar Nuclei sobre el objetivo")
     parser.add_argument("--nuclei-output-format", choices=["json", "yaml", "html", "pdf", "csv"], default="json", help="Formato de salida de Nuclei: json, yaml, html, pdf, csv")
