@@ -3,15 +3,11 @@ Módulo de análisis de Security Headers.
 Detecta headers de seguridad faltantes o mal configurados según OWASP y mejores prácticas.
 """
 
-import requests
-from core.base_module import VulnerabilityModule
-from core.logger import get_logger
+from core.enhanced_base_module import EnhancedVulnerabilityModule
 from datetime import datetime
-import json
-import os
 
 
-class HeadersModule(VulnerabilityModule):
+class HeadersModule(EnhancedVulnerabilityModule):
     """
     Analiza los headers de seguridad HTTP del objetivo.
     Verifica presencia, configuración correcta y detecta problemas comunes.
@@ -130,25 +126,21 @@ class HeadersModule(VulnerabilityModule):
 
     def __init__(self, config):
         super().__init__(config)
-        self.logger = get_logger("headers_module")
-        self.target_url = config.get("target_url")
-        self.findings = []
+        # HTTPClient, logger, findings, report_dir ya disponibles
         self.headers_response = {}
         self.scan_timestamp = config.get("scan_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
-        self.report_dir = config.get("report_dir", f"reports/scan_{self.scan_timestamp}")
 
     def scan(self):
         """Ejecuta el análisis completo de security headers."""
         self.logger.info(f"[Headers] Iniciando análisis de security headers en: {self.target_url}")
         
         try:
-            # Realizar petición al objetivo
-            response = requests.get(
-                self.target_url,
-                timeout=10,
-                allow_redirects=True,
-                headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) WebSecFramework/1.0"}
-            )
+            # Realizar petición al objetivo (método heredado)
+            response = self._make_request(self.target_url)
+            
+            if not response:
+                self.logger.error("[Headers] No se pudo obtener respuesta del objetivo")
+                return
             
             self.headers_response = dict(response.headers)
             self.logger.info(f"[Headers] Respuesta recibida (Status: {response.status_code})")
@@ -166,16 +158,14 @@ class HeadersModule(VulnerabilityModule):
             self._export_results()
             
             # Resumen
-            critical = len([f for f in self.findings if f["severity"] == "critical"])
-            high = len([f for f in self.findings if f["severity"] == "high"])
-            medium = len([f for f in self.findings if f["severity"] == "medium"])
-            low = len([f for f in self.findings if f["severity"] == "low"])
+            critical = len([f for f in self.findings if f.get("severity") == "critical"])
+            high = len([f for f in self.findings if f.get("severity") == "high"])
+            medium = len([f for f in self.findings if f.get("severity") == "medium"])
+            low = len([f for f in self.findings if f.get("severity") == "low"])
             
             self.logger.info(f"[Headers] Análisis completado: {len(self.findings)} hallazgos")
             self.logger.info(f"[Headers] Severidad: Critical={critical}, High={high}, Medium={medium}, Low={low}")
             
-        except requests.exceptions.RequestException as e:
-            self.logger.error(f"[Headers] Error al conectar con {self.target_url}: {e}")
         except Exception as e:
             self.logger.error(f"[Headers] Error inesperado: {e}")
 
@@ -185,27 +175,25 @@ class HeadersModule(VulnerabilityModule):
             header_value = self._get_header_case_insensitive(header_name)
             
             if not header_value:
-                # Header faltante
-                finding = {
-                    "type": "missing_security_header",
-                    "severity": header_info["severity"],
-                    "header": header_name,
-                    "title": f"Security Header Faltante: {header_name}",
-                    "description": header_info["description"],
-                    "recommendation": header_info["recommendation"],
-                    "cvss": header_info["cvss"],
-                    "references": header_info["references"],
-                    "evidence": {
-                        "url": self.target_url,
+                # Header faltante - usar _add_finding heredado
+                self._add_finding(
+                    vulnerability=f"Security Header Faltante: {header_name}",
+                    severity=header_info["severity"],
+                    url=self.target_url,
+                    payload=None,
+                    details={
+                        "type": "missing_security_header",
+                        "header": header_name,
+                        "description": header_info["description"],
+                        "recommendation": header_info["recommendation"],
+                        "cvss": header_info["cvss"],
+                        "references": header_info["references"],
                         "header_present": False,
-                        "current_value": None
+                        "current_value": None,
+                        "note": header_info.get("note")
                     }
-                }
+                )
                 
-                if "note" in header_info:
-                    finding["note"] = header_info["note"]
-                
-                self.findings.append(finding)
                 self.logger.warning(f"[Headers] Faltante: {header_name} (Severidad: {header_info['severity']})")
             else:
                 # Header presente, verificar configuración
@@ -243,23 +231,23 @@ class HeadersModule(VulnerabilityModule):
             issues.extend(hsts_issues)
         
         if issues:
-            finding = {
-                "type": "misconfigured_security_header",
-                "severity": "medium",  # Presente pero mal configurado es menos grave
-                "header": header_name,
-                "title": f"Security Header Mal Configurado: {header_name}",
-                "description": f"{header_info['description']}. Problemas detectados: {'; '.join(issues)}",
-                "recommendation": header_info["recommendation"],
-                "cvss": header_info["cvss"] * 0.7,  # Reducir CVSS si está presente pero mal configurado
-                "references": header_info["references"],
-                "evidence": {
-                    "url": self.target_url,
+            self._add_finding(
+                vulnerability=f"Security Header Mal Configurado: {header_name}",
+                severity="medium",
+                url=self.target_url,
+                payload=None,
+                details={
+                    "type": "misconfigured_security_header",
+                    "header": header_name,
+                    "description": f"{header_info['description']}. Problemas detectados: {'; '.join(issues)}",
+                    "recommendation": header_info["recommendation"],
+                    "cvss": header_info["cvss"] * 0.7,
+                    "references": header_info["references"],
                     "header_present": True,
                     "current_value": header_value,
                     "issues": issues
                 }
-            }
-            self.findings.append(finding)
+            )
             self.logger.warning(f"[Headers] Mal configurado: {header_name} - {'; '.join(issues)}")
 
     def _check_csp_policy(self, csp_value):
@@ -316,24 +304,24 @@ class HeadersModule(VulnerabilityModule):
             header_value = self._get_header_case_insensitive(header_name)
             
             if header_value:
-                finding = {
-                    "type": "information_disclosure",
-                    "severity": header_info["severity"],
-                    "header": header_name,
-                    "title": f"Information Disclosure: {header_name}",
-                    "description": header_info["description"],
-                    "recommendation": header_info["recommendation"],
-                    "cvss": header_info["cvss"],
-                    "references": [
-                        "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/01-Information_Gathering/02-Fingerprint_Web_Server"
-                    ],
-                    "evidence": {
-                        "url": self.target_url,
+                self._add_finding(
+                    vulnerability=f"Information Disclosure: {header_name}",
+                    severity=header_info["severity"],
+                    url=self.target_url,
+                    payload=None,
+                    details={
+                        "type": "information_disclosure",
+                        "header": header_name,
+                        "description": header_info["description"],
+                        "recommendation": header_info["recommendation"],
+                        "cvss": header_info["cvss"],
+                        "references": [
+                            "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/01-Information_Gathering/02-Fingerprint_Web_Server"
+                        ],
                         "header_present": True,
                         "disclosed_value": header_value
                     }
-                }
-                self.findings.append(finding)
+                )
                 self.logger.info(f"[Headers] Information Disclosure: {header_name} = {header_value}")
 
     def _check_insecure_configurations(self):
@@ -342,24 +330,24 @@ class HeadersModule(VulnerabilityModule):
         # Verificar Access-Control-Allow-Origin permisivo
         acao = self._get_header_case_insensitive("Access-Control-Allow-Origin")
         if acao == "*":
-            finding = {
-                "type": "insecure_cors",
-                "severity": "medium",
-                "header": "Access-Control-Allow-Origin",
-                "title": "CORS Permisivo: Access-Control-Allow-Origin: *",
-                "description": "El header CORS permite peticiones desde cualquier origen, lo que puede exponer datos sensibles",
-                "recommendation": "Restringir Access-Control-Allow-Origin a dominios específicos de confianza",
-                "cvss": 5.3,
-                "references": [
-                    "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/07-Testing_Cross_Origin_Resource_Sharing",
-                    "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS"
-                ],
-                "evidence": {
-                    "url": self.target_url,
+            self._add_finding(
+                vulnerability="CORS Permisivo: Access-Control-Allow-Origin: *",
+                severity="medium",
+                url=self.target_url,
+                payload=None,
+                details={
+                    "type": "insecure_cors",
+                    "header": "Access-Control-Allow-Origin",
+                    "description": "El header CORS permite peticiones desde cualquier origen, lo que puede exponer datos sensibles",
+                    "recommendation": "Restringir Access-Control-Allow-Origin a dominios específicos de confianza",
+                    "cvss": 5.3,
+                    "references": [
+                        "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/11-Client-side_Testing/07-Testing_Cross_Origin_Resource_Sharing",
+                        "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS"
+                    ],
                     "current_value": acao
                 }
-            }
-            self.findings.append(finding)
+            )
             self.logger.warning("[Headers] CORS permisivo detectado: Access-Control-Allow-Origin: *")
         
         # Verificar X-Frame-Options vs CSP frame-ancestors
@@ -367,64 +355,28 @@ class HeadersModule(VulnerabilityModule):
         csp = self._get_header_case_insensitive("Content-Security-Policy")
         
         if xfo and csp and "frame-ancestors" in csp:
-            finding = {
-                "type": "redundant_headers",
-                "severity": "info",
-                "header": "X-Frame-Options",
-                "title": "Header Redundante: X-Frame-Options",
-                "description": "X-Frame-Options es redundante cuando CSP frame-ancestors está presente. CSP tiene prioridad.",
-                "recommendation": "Mantener solo CSP frame-ancestors para navegadores modernos, X-Frame-Options para compatibilidad",
-                "cvss": 0.0,
-                "references": [
-                    "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors"
-                ],
-                "evidence": {
-                    "url": self.target_url,
+            self._add_finding(
+                vulnerability="Header Redundante: X-Frame-Options",
+                severity="info",
+                url=self.target_url,
+                payload=None,
+                details={
+                    "type": "redundant_headers",
+                    "header": "X-Frame-Options",
+                    "description": "X-Frame-Options es redundante cuando CSP frame-ancestors está presente. CSP tiene prioridad.",
+                    "recommendation": "Mantener solo CSP frame-ancestors para navegadores modernos, X-Frame-Options para compatibilidad",
+                    "cvss": 0.0,
+                    "references": [
+                        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy/frame-ancestors"
+                    ],
                     "xfo_value": xfo,
                     "csp_value": csp
                 }
-            }
-            self.findings.append(finding)
-
+            )
+    
     def _get_header_case_insensitive(self, header_name):
         """Obtiene un header ignorando mayúsculas/minúsculas."""
         for key, value in self.headers_response.items():
             if key.lower() == header_name.lower():
                 return value
         return None
-
-    def _export_results(self):
-        """Exporta los hallazgos a JSON."""
-        try:
-            os.makedirs(self.report_dir, exist_ok=True)
-            
-            output_data = {
-                "scan_info": {
-                    "target": self.target_url,
-                    "timestamp": self.scan_timestamp,
-                    "module": "security_headers",
-                    "total_findings": len(self.findings)
-                },
-                "headers_analyzed": self.headers_response,
-                "findings": self.findings,
-                "summary": {
-                    "critical": len([f for f in self.findings if f["severity"] == "critical"]),
-                    "high": len([f for f in self.findings if f["severity"] == "high"]),
-                    "medium": len([f for f in self.findings if f["severity"] == "medium"]),
-                    "low": len([f for f in self.findings if f["severity"] == "low"]),
-                    "info": len([f for f in self.findings if f["severity"] == "info"])
-                }
-            }
-            
-            output_path = os.path.join(self.report_dir, "headers_findings.json")
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(output_data, f, indent=2, ensure_ascii=False)
-            
-            self.logger.info(f"[Headers] Resultados exportados en: {output_path}")
-            
-        except Exception as e:
-            self.logger.error(f"[Headers] Error al exportar resultados: {e}")
-
-    def get_results(self):
-        """Devuelve los hallazgos encontrados."""
-        return self.findings

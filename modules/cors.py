@@ -3,27 +3,16 @@ Módulo de detección de mala configuración CORS.
 Análisis profundo de configuraciones Cross-Origin Resource Sharing.
 CVSS: 7.5 (High)
 """
-from core.base_module import VulnerabilityModule
-from core.logger import get_logger
-import requests
-import os
-import json
+from core.enhanced_base_module import EnhancedVulnerabilityModule
 from urllib.parse import urlparse
 
 
-class CORSModule(VulnerabilityModule):
+class CORSModule(EnhancedVulnerabilityModule):
     """Módulo para detectar configuraciones inseguras de CORS."""
     
     def __init__(self, config):
         super().__init__(config)
-        self.logger = get_logger("cors_module")
-        self.findings = []
-        self.target_url = config.get("target_url")
-        self.report_dir = config.get("report_dir", "reports")
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
+        # HTTPClient, logger, findings, report_dir ya disponibles
     
     def scan(self):
         """Detecta configuraciones inseguras de CORS."""
@@ -56,28 +45,31 @@ class CORSModule(VulnerabilityModule):
         self.logger.info("Verificando wildcard en Access-Control-Allow-Origin...")
         
         try:
-            response = self.session.get(self.target_url, timeout=10)
+            response = self._make_request(self.target_url)
+            if not response:
+                return
+            
             acao = response.headers.get('Access-Control-Allow-Origin', '')
             
             if acao == '*':
-                finding = {
-                    "type": "cors_wildcard",
-                    "severity": "high",
-                    "title": "CORS - Wildcard Origin",
-                    "cvss": 7.5,
-                    "url": self.target_url,
-                    "description": "Access-Control-Allow-Origin configurado con wildcard (*)",
-                    "details": {
+                self._add_finding(
+                    vulnerability="CORS - Wildcard Origin",
+                    severity="high",
+                    url=self.target_url,
+                    payload=None,
+                    details={
+                        "type": "cors_wildcard",
+                        "cvss": 7.5,
+                        "description": "Access-Control-Allow-Origin configurado con wildcard (*)",
                         "header": "Access-Control-Allow-Origin: *",
-                        "risk": "Permite que cualquier dominio acceda a los recursos"
-                    },
-                    "recommendation": "Especificar dominios permitidos explícitamente en lugar de usar wildcard. Implementar whitelist de orígenes confiables.",
-                    "references": [
-                        "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS",
-                        "https://portswigger.net/web-security/cors"
-                    ]
-                }
-                self.findings.append(finding)
+                        "risk": "Permite que cualquier dominio acceda a los recursos",
+                        "recommendation": "Especificar dominios permitidos explícitamente en lugar de usar wildcard. Implementar whitelist de orígenes confiables.",
+                        "references": [
+                            "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS",
+                            "https://portswigger.net/web-security/cors"
+                        ]
+                    }
+                )
                 self.logger.warning("CORS wildcard detectado")
         
         except Exception as e:
@@ -89,54 +81,56 @@ class CORSModule(VulnerabilityModule):
         
         try:
             headers = {'Origin': 'https://evil.com'}
-            response = self.session.get(self.target_url, headers=headers, timeout=10)
+            response = self._make_request(self.target_url, headers=headers)
+            if not response:
+                return
             
             acao = response.headers.get('Access-Control-Allow-Origin', '')
             acac = response.headers.get('Access-Control-Allow-Credentials', '')
             
             # Wildcard con credentials es una configuración crítica
             if acao == '*' and acac.lower() == 'true':
-                finding = {
-                    "type": "cors_credentials_wildcard",
-                    "severity": "critical",
-                    "title": "CORS - Credentials with Wildcard",
-                    "cvss": 9.1,
-                    "url": self.target_url,
-                    "description": "CORS permite credentials con wildcard origin (configuración inválida pero peligrosa)",
-                    "details": {
+                self._add_finding(
+                    vulnerability="CORS - Credentials with Wildcard",
+                    severity="critical",
+                    url=self.target_url,
+                    payload=None,
+                    details={
+                        "type": "cors_credentials_wildcard",
+                        "cvss": 9.1,
+                        "description": "CORS permite credentials con wildcard origin (configuración inválida pero peligrosa)",
                         "acao": acao,
                         "acac": acac,
-                        "risk": "Exposición de datos sensibles a cualquier origen"
-                    },
-                    "recommendation": "NUNCA usar wildcard con credentials. Especificar dominios confiables explícitamente.",
-                    "references": [
-                        "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials"
-                    ]
-                }
-                self.findings.append(finding)
+                        "risk": "Exposición de datos sensibles a cualquier origen",
+                        "recommendation": "NUNCA usar wildcard con credentials. Especificar dominios confiables explícitamente.",
+                        "references": [
+                            "https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS/Errors/CORSNotSupportingCredentials"
+                        ]
+                    }
+                )
                 self.logger.critical("CORS credentials con wildcard detectado")
             
             # Reflexión de origin con credentials
             elif acao == 'https://evil.com' and acac.lower() == 'true':
-                finding = {
-                    "type": "cors_origin_reflection_credentials",
-                    "severity": "critical",
-                    "title": "CORS - Origin Reflection with Credentials",
-                    "cvss": 9.1,
-                    "url": self.target_url,
-                    "description": "CORS refleja cualquier origin con credentials habilitados",
-                    "details": {
+                self._add_finding(
+                    vulnerability="CORS - Origin Reflection with Credentials",
+                    severity="critical",
+                    url=self.target_url,
+                    payload=None,
+                    details={
+                        "type": "cors_origin_reflection_credentials",
+                        "cvss": 9.1,
+                        "description": "CORS refleja cualquier origin con credentials habilitados",
                         "tested_origin": "https://evil.com",
                         "reflected_origin": acao,
                         "credentials": acac,
-                        "risk": "Permite robo de datos sensibles desde dominios maliciosos"
-                    },
-                    "recommendation": "Implementar whitelist estricta de orígenes. No reflejar el header Origin sin validación.",
-                    "references": [
-                        "https://portswigger.net/web-security/cors/access-control-allow-credentials"
-                    ]
-                }
-                self.findings.append(finding)
+                        "risk": "Permite robo de datos sensibles desde dominios maliciosos",
+                        "recommendation": "Implementar whitelist estricta de orígenes. No reflejar el header Origin sin validación.",
+                        "references": [
+                            "https://portswigger.net/web-security/cors/access-control-allow-credentials"
+                        ]
+                    }
+                )
                 self.logger.critical("CORS reflexión de origin con credentials")
         
         except Exception as e:
@@ -148,7 +142,9 @@ class CORSModule(VulnerabilityModule):
         
         try:
             headers = {'Origin': 'https://test.com'}
-            response = self.session.options(self.target_url, headers=headers, timeout=10)
+            response = self._make_request(self.target_url, method='OPTIONS', headers=headers)
+            if not response:
+                return
             
             acam = response.headers.get('Access-Control-Allow-Methods', '')
             
@@ -157,24 +153,24 @@ class CORSModule(VulnerabilityModule):
                 found_dangerous = [m for m in dangerous_methods if m in acam.upper()]
                 
                 if found_dangerous:
-                    finding = {
-                        "type": "cors_dangerous_methods",
-                        "severity": "medium",
-                        "title": "CORS - Dangerous Methods Allowed",
-                        "cvss": 6.5,
-                        "url": self.target_url,
-                        "description": f"CORS permite métodos HTTP peligrosos: {', '.join(found_dangerous)}",
-                        "details": {
+                    self._add_finding(
+                        vulnerability="CORS - Dangerous Methods Allowed",
+                        severity="medium",
+                        url=self.target_url,
+                        payload=None,
+                        details={
+                            "type": "cors_dangerous_methods",
+                            "cvss": 6.5,
+                            "description": f"CORS permite métodos HTTP peligrosos: {', '.join(found_dangerous)}",
                             "allowed_methods": acam,
                             "dangerous_methods": found_dangerous,
-                            "risk": "Permite operaciones destructivas desde otros orígenes"
-                        },
-                        "recommendation": "Limitar métodos CORS solo a los estrictamente necesarios (GET, POST). Evitar PUT, DELETE en recursos sensibles.",
-                        "references": [
-                            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods"
-                        ]
-                    }
-                    self.findings.append(finding)
+                            "risk": "Permite operaciones destructivas desde otros orígenes",
+                            "recommendation": "Limitar métodos CORS solo a los estrictamente necesarios (GET, POST). Evitar PUT, DELETE en recursos sensibles.",
+                            "references": [
+                                "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Access-Control-Allow-Methods"
+                            ]
+                        }
+                    )
                     self.logger.warning(f"Métodos peligrosos permitidos: {found_dangerous}")
         
         except Exception as e:
@@ -186,28 +182,30 @@ class CORSModule(VulnerabilityModule):
         
         try:
             headers = {'Origin': 'null'}
-            response = self.session.get(self.target_url, headers=headers, timeout=10)
+            response = self._make_request(self.target_url, headers=headers)
+            if not response:
+                return
             
             acao = response.headers.get('Access-Control-Allow-Origin', '')
             
             if acao == 'null':
-                finding = {
-                    "type": "cors_null_origin",
-                    "severity": "high",
-                    "title": "CORS - Null Origin Accepted",
-                    "cvss": 7.5,
-                    "url": self.target_url,
-                    "description": "CORS acepta origin 'null' (puede ser explotado desde sandboxed iframes)",
-                    "details": {
+                self._add_finding(
+                    vulnerability="CORS - Null Origin Accepted",
+                    severity="high",
+                    url=self.target_url,
+                    payload=None,
+                    details={
+                        "type": "cors_null_origin",
+                        "cvss": 7.5,
+                        "description": "CORS acepta origin 'null' (puede ser explotado desde sandboxed iframes)",
                         "acao": acao,
-                        "risk": "Atacantes pueden usar iframes sandboxed para enviar origin null"
-                    },
-                    "recommendation": "Rechazar explícitamente origin 'null'. Validar que el origin sea un dominio válido.",
-                    "references": [
-                        "https://portswigger.net/web-security/cors/lab-null-origin-whitelisted-attack"
-                    ]
-                }
-                self.findings.append(finding)
+                        "risk": "Atacantes pueden usar iframes sandboxed para enviar origin null",
+                        "recommendation": "Rechazar explícitamente origin 'null'. Validar que el origin sea un dominio válido.",
+                        "references": [
+                            "https://portswigger.net/web-security/cors/lab-null-origin-whitelisted-attack"
+                        ]
+                    }
+                )
                 self.logger.warning("CORS acepta null origin")
         
         except Exception as e:
@@ -226,49 +224,34 @@ class CORSModule(VulnerabilityModule):
             
             for origin in test_origins:
                 headers = {'Origin': origin}
-                response = self.session.get(self.target_url, headers=headers, timeout=10)
+                response = self._make_request(self.target_url, headers=headers)
+                
+                if not response:
+                    continue
                 
                 acao = response.headers.get('Access-Control-Allow-Origin', '')
                 
                 if acao == origin:
-                    finding = {
-                        "type": "cors_arbitrary_origin_reflection",
-                        "severity": "high",
-                        "title": "CORS - Arbitrary Origin Reflection",
-                        "cvss": 7.5,
-                        "url": self.target_url,
-                        "description": f"CORS refleja origin arbitrario sin validación: {origin}",
-                        "details": {
+                    self._add_finding(
+                        vulnerability="CORS - Arbitrary Origin Reflection",
+                        severity="high",
+                        url=self.target_url,
+                        payload=origin,
+                        details={
+                            "type": "cors_arbitrary_origin_reflection",
+                            "cvss": 7.5,
+                            "description": f"CORS refleja origin arbitrario sin validación: {origin}",
                             "tested_origin": origin,
                             "reflected_origin": acao,
-                            "risk": "Cualquier dominio puede acceder a los recursos"
-                        },
-                        "recommendation": "Implementar whitelist de dominios permitidos. No reflejar el header Origin sin validación estricta.",
-                        "references": [
-                            "https://portswigger.net/web-security/cors"
-                        ]
-                    }
-                    self.findings.append(finding)
+                            "risk": "Cualquier dominio puede acceder a los recursos",
+                            "recommendation": "Implementar whitelist de dominios permitidos. No reflejar el header Origin sin validación estricta.",
+                            "references": [
+                                "https://portswigger.net/web-security/cors"
+                            ]
+                        }
+                    )
                     self.logger.warning(f"Origin arbitrario reflejado: {origin}")
                     break  # Solo reportar una vez
         
         except Exception as e:
             self.logger.error(f"Error verificando reflexión de origin: {e}")
-    
-    def _export_results(self):
-        """Exporta los resultados a JSON."""
-        try:
-            os.makedirs(self.report_dir, exist_ok=True)
-            output_path = os.path.join(self.report_dir, "cors_findings.json")
-            
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(self.findings, f, indent=2, ensure_ascii=False)
-            
-            self.logger.info(f"Resultados CORS exportados: {output_path}")
-        
-        except Exception as e:
-            self.logger.error(f"Error exportando resultados CORS: {e}")
-    
-    def get_results(self):
-        """Devuelve los hallazgos encontrados."""
-        return self.findings

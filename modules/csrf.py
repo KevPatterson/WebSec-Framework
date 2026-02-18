@@ -3,29 +3,18 @@ Módulo de detección de CSRF (Cross-Site Request Forgery).
 Detecta vulnerabilidades de falsificación de peticiones entre sitios.
 CVSS: 8.8 (High)
 """
-from core.base_module import VulnerabilityModule
-from core.logger import get_logger
-import requests
+from core.enhanced_base_module import EnhancedVulnerabilityModule
 import re
-import os
-import json
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin, urlparse
 
 
-class CSRFModule(VulnerabilityModule):
+class CSRFModule(EnhancedVulnerabilityModule):
     """Módulo para detectar vulnerabilidades CSRF (Cross-Site Request Forgery)."""
     
     def __init__(self, config):
         super().__init__(config)
-        self.logger = get_logger("csrf_module")
-        self.findings = []
-        self.target_url = config.get("target_url")
-        self.report_dir = config.get("report_dir", "reports")
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
+        # HTTPClient, logger, findings, report_dir ya disponibles
     
     def scan(self):
         """Ejecuta el escaneo de CSRF."""
@@ -55,7 +44,10 @@ class CSRFModule(VulnerabilityModule):
         self.logger.info("Analizando tokens CSRF en formularios...")
         
         try:
-            response = self.session.get(self.target_url, timeout=10)
+            response = self._make_request(self.target_url)
+            if not response:
+                return
+            
             soup = BeautifulSoup(response.text, 'html.parser')
             forms = soup.find_all('form')
             
@@ -88,27 +80,27 @@ class CSRFModule(VulnerabilityModule):
                 if not csrf_token_found:
                     full_action = urljoin(self.target_url, form_action)
                     
-                    finding = {
-                        "type": "csrf_missing_token",
-                        "severity": "high",
-                        "title": "CSRF - Missing Token",
-                        "cvss": 8.8,
-                        "url": full_action,
-                        "method": form_method,
-                        "description": f"Formulario sin token CSRF detectado",
-                        "details": {
+                    self._add_finding(
+                        vulnerability="CSRF - Missing Token",
+                        severity="high",
+                        url=full_action,
+                        payload=None,
+                        details={
+                            "type": "csrf_missing_token",
+                            "cvss": 8.8,
+                            "method": form_method,
+                            "description": f"Formulario sin token CSRF detectado",
                             "form_index": idx,
                             "form_action": form_action,
                             "form_method": form_method,
-                            "inputs_count": len(inputs)
-                        },
-                        "recommendation": "Implementar tokens CSRF en todos los formularios POST. Usar librerías como Flask-WTF, Django CSRF, o implementar tokens únicos por sesión.",
-                        "references": [
-                            "https://owasp.org/www-community/attacks/csrf",
-                            "https://cwe.mitre.org/data/definitions/352.html"
-                        ]
-                    }
-                    self.findings.append(finding)
+                            "inputs_count": len(inputs),
+                            "recommendation": "Implementar tokens CSRF en todos los formularios POST. Usar librerías como Flask-WTF, Django CSRF, o implementar tokens únicos por sesión.",
+                            "references": [
+                                "https://owasp.org/www-community/attacks/csrf",
+                                "https://cwe.mitre.org/data/definitions/352.html"
+                            ]
+                        }
+                    )
                     self.logger.warning(f"Formulario sin token CSRF: {full_action}")
         
         except Exception as e:
@@ -119,7 +111,10 @@ class CSRFModule(VulnerabilityModule):
         self.logger.info("Validando atributo SameSite en cookies...")
         
         try:
-            response = self.session.get(self.target_url, timeout=10)
+            response = self._make_request(self.target_url)
+            if not response:
+                return
+            
             cookies = response.cookies
             
             if not cookies:
@@ -147,45 +142,45 @@ class CSRFModule(VulnerabilityModule):
                         samesite_value = match.group(1)
                 
                 if not has_samesite:
-                    finding = {
-                        "type": "csrf_missing_samesite",
-                        "severity": "medium",
-                        "title": "CSRF - Missing SameSite Cookie Attribute",
-                        "cvss": 6.5,
-                        "url": self.target_url,
-                        "description": f"Cookie '{cookie_name}' sin atributo SameSite",
-                        "details": {
+                    self._add_finding(
+                        vulnerability="CSRF - Missing SameSite Cookie Attribute",
+                        severity="medium",
+                        url=self.target_url,
+                        payload=None,
+                        details={
+                            "type": "csrf_missing_samesite",
+                            "cvss": 6.5,
+                            "description": f"Cookie '{cookie_name}' sin atributo SameSite",
                             "cookie_name": cookie_name,
                             "secure": cookie.secure,
-                            "httponly": cookie.has_nonstandard_attr('HttpOnly')
-                        },
-                        "recommendation": "Configurar SameSite=Strict o SameSite=Lax en todas las cookies de sesión para prevenir CSRF.",
-                        "references": [
-                            "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite"
-                        ]
-                    }
-                    self.findings.append(finding)
+                            "httponly": cookie.has_nonstandard_attr('HttpOnly'),
+                            "recommendation": "Configurar SameSite=Strict o SameSite=Lax en todas las cookies de sesión para prevenir CSRF.",
+                            "references": [
+                                "https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie/SameSite"
+                            ]
+                        }
+                    )
                     self.logger.warning(f"Cookie sin SameSite: {cookie_name}")
                 
                 elif samesite_value and samesite_value.lower() == 'none' and not cookie.secure:
-                    finding = {
-                        "type": "csrf_insecure_samesite_none",
-                        "severity": "high",
-                        "title": "CSRF - Insecure SameSite=None Cookie",
-                        "cvss": 7.5,
-                        "url": self.target_url,
-                        "description": f"Cookie '{cookie_name}' con SameSite=None sin Secure flag",
-                        "details": {
+                    self._add_finding(
+                        vulnerability="CSRF - Insecure SameSite=None Cookie",
+                        severity="high",
+                        url=self.target_url,
+                        payload=None,
+                        details={
+                            "type": "csrf_insecure_samesite_none",
+                            "cvss": 7.5,
+                            "description": f"Cookie '{cookie_name}' con SameSite=None sin Secure flag",
                             "cookie_name": cookie_name,
                             "samesite": samesite_value,
-                            "secure": cookie.secure
-                        },
-                        "recommendation": "Cookies con SameSite=None deben tener el flag Secure activado.",
-                        "references": [
-                            "https://web.dev/samesite-cookies-explained/"
-                        ]
-                    }
-                    self.findings.append(finding)
+                            "secure": cookie.secure,
+                            "recommendation": "Cookies con SameSite=None deben tener el flag Secure activado.",
+                            "references": [
+                                "https://web.dev/samesite-cookies-explained/"
+                            ]
+                        }
+                    )
                     self.logger.warning(f"Cookie insegura SameSite=None: {cookie_name}")
         
         except Exception as e:
@@ -213,7 +208,10 @@ class CSRFModule(VulnerabilityModule):
                 for origin in malicious_origins:
                     try:
                         headers = {'Origin': origin}
-                        response = self.session.post(endpoint, headers=headers, timeout=5)
+                        response = self._make_request(endpoint, method='POST', headers=headers)
+
+                        if not response:
+                            continue
                         
                         # CRÍTICO: Filtrar endpoints que no existen (404)
                         if response.status_code == 404:
@@ -223,29 +221,29 @@ class CSRFModule(VulnerabilityModule):
                         # CRÍTICO: Solo reportar endpoints que responden correctamente
                         # Si acepta el request sin validar Origin Y el endpoint existe
                         if response.status_code in [200, 201, 204]:
-                            finding = {
-                                "type": "csrf_missing_origin_validation",
-                                "severity": "high",
-                                "title": "CSRF - Missing Origin/Referer Validation",
-                                "cvss": 8.1,
-                                "url": endpoint,
-                                "method": "POST",
-                                "description": f"Endpoint acepta peticiones con Origin malicioso: {origin}",
-                                "details": {
+                            self._add_finding(
+                                vulnerability="CSRF - Missing Origin/Referer Validation",
+                                severity="high",
+                                url=endpoint,
+                                payload=origin,
+                                details={
+                                    "type": "csrf_missing_origin_validation",
+                                    "cvss": 8.1,
+                                    "method": "POST",
+                                    "description": f"Endpoint acepta peticiones con Origin malicioso: {origin}",
                                     "malicious_origin": origin,
                                     "status_code": response.status_code,
-                                    "endpoint": endpoint
-                                },
-                                "recommendation": "Implementar validación estricta de headers Origin y Referer en endpoints sensibles.",
-                                "references": [
-                                    "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html"
-                                ]
-                            }
-                            self.findings.append(finding)
+                                    "endpoint": endpoint,
+                                    "recommendation": "Implementar validación estricta de headers Origin y Referer en endpoints sensibles.",
+                                    "references": [
+                                        "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html"
+                                    ]
+                                }
+                            )
                             self.logger.warning(f"Endpoint sin validación Origin: {endpoint}")
                             break  # Solo reportar una vez por endpoint
                     
-                    except requests.exceptions.RequestException:
+                    except Exception:
                         pass  # Endpoint no existe o no responde
         
         except Exception as e:
@@ -272,50 +270,35 @@ class CSRFModule(VulnerabilityModule):
                 
                 try:
                     # Intentar POST sin token CSRF
-                    response = self.session.post(full_url, data={'test': 'data'}, timeout=5)
+                    response = self._make_request(full_url, method='POST', data={'test': 'data'})
+                    
+                    if not response:
+                        continue
                     
                     # Si no rechaza la petición (403/401), podría ser vulnerable
                     if response.status_code not in [403, 401, 404]:
-                        finding = {
-                            "type": "csrf_unprotected_endpoint",
-                            "severity": "high",
-                            "title": "CSRF - Unprotected Endpoint",
-                            "cvss": 8.8,
-                            "url": full_url,
-                            "method": "POST",
-                            "description": f"Endpoint sensible sin protección CSRF aparente",
-                            "details": {
+                        self._add_finding(
+                            vulnerability="CSRF - Unprotected Endpoint",
+                            severity="high",
+                            url=full_url,
+                            payload=None,
+                            details={
+                                "type": "csrf_unprotected_endpoint",
+                                "cvss": 8.8,
+                                "method": "POST",
+                                "description": f"Endpoint sensible sin protección CSRF aparente",
                                 "status_code": response.status_code,
-                                "endpoint": endpoint
-                            },
-                            "recommendation": "Implementar protección CSRF en todos los endpoints que modifican datos.",
-                            "references": [
-                                "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery"
-                            ]
-                        }
-                        self.findings.append(finding)
+                                "endpoint": endpoint,
+                                "recommendation": "Implementar protección CSRF en todos los endpoints que modifican datos.",
+                                "references": [
+                                    "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/06-Session_Management_Testing/05-Testing_for_Cross_Site_Request_Forgery"
+                                ]
+                            }
+                        )
                         self.logger.warning(f"Endpoint sin protección CSRF: {full_url}")
                 
-                except requests.exceptions.RequestException:
+                except Exception:
                     pass  # Endpoint no existe
         
         except Exception as e:
             self.logger.error(f"Error detectando endpoints desprotegidos: {e}")
-    
-    def _export_results(self):
-        """Exporta los resultados a JSON."""
-        try:
-            os.makedirs(self.report_dir, exist_ok=True)
-            output_path = os.path.join(self.report_dir, "csrf_findings.json")
-            
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(self.findings, f, indent=2, ensure_ascii=False)
-            
-            self.logger.info(f"Resultados CSRF exportados: {output_path}")
-        
-        except Exception as e:
-            self.logger.error(f"Error exportando resultados CSRF: {e}")
-    
-    def get_results(self):
-        """Devuelve los hallazgos encontrados."""
-        return self.findings

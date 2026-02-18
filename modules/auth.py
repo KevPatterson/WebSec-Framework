@@ -3,20 +3,16 @@ Módulo de detección de autenticación débil.
 Detecta problemas de autenticación, credenciales por defecto y configuraciones inseguras.
 """
 
-import requests
-import re
-import time
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
-from core.base_module import VulnerabilityModule
-from core.logger import get_logger
+from core.enhanced_base_module import EnhancedVulnerabilityModule
 from datetime import datetime
-import json
-import os
+import re
+import time
 import base64
 
 
-class AuthModule(VulnerabilityModule):
+class AuthModule(EnhancedVulnerabilityModule):
     """
     Detecta vulnerabilidades de autenticación débil, credenciales por defecto,
     y configuraciones inseguras de autenticación.
@@ -68,12 +64,9 @@ class AuthModule(VulnerabilityModule):
 
     def __init__(self, config):
         super().__init__(config)
-        self.logger = get_logger("auth_module")
-        self.target_url = config.get("target_url")
-        self.findings = []
+        # HTTPClient, logger, findings, report_dir ya disponibles
         self.tested_forms = set()
         self.scan_timestamp = config.get("scan_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
-        self.report_dir = config.get("report_dir", f"reports/scan_{self.scan_timestamp}")
         self.timeout = config.get("timeout", 10)
 
     def scan(self):
@@ -101,13 +94,13 @@ class AuthModule(VulnerabilityModule):
             # 5. Verificar configuraciones inseguras
             self._check_insecure_configs()
             
-            # 6. Exportar resultados
+            # 6. Exportar resultados (método heredado)
             self._export_results()
             
             # Resumen
-            critical = len([f for f in self.findings if f["severity"] == "critical"])
-            high = len([f for f in self.findings if f["severity"] == "high"])
-            medium = len([f for f in self.findings if f["severity"] == "medium"])
+            critical = len([f for f in self.findings if f.get("severity") == "critical"])
+            high = len([f for f in self.findings if f.get("severity") == "high"])
+            medium = len([f for f in self.findings if f.get("severity") == "medium"])
             
             self.logger.info(f"[AUTH] Escaneo completado: {len(self.findings)} hallazgos")
             self.logger.info(f"[AUTH] Severidad: Critical={critical}, High={high}, Medium={medium}")
@@ -118,34 +111,37 @@ class AuthModule(VulnerabilityModule):
     def _check_http_auth(self):
         """Verifica autenticación HTTP Basic/Digest."""
         try:
-            response = requests.get(self.target_url, timeout=self.timeout)
+            response = self._make_request(self.target_url)
+            
+            if not response:
+                return
             
             # Verificar si requiere autenticación HTTP
             if response.status_code == 401:
                 auth_header = response.headers.get('WWW-Authenticate', '')
                 
                 if 'Basic' in auth_header:
-                    finding = {
-                        "type": "weak_authentication",
-                        "severity": "medium",
-                        "title": "Autenticación HTTP Basic detectada",
-                        "description": "El sitio utiliza autenticación HTTP Basic, que transmite credenciales en Base64 (fácilmente decodificable). Sin HTTPS, las credenciales se envían en texto plano.",
-                        "cvss": 5.3,
-                        "cwe": "CWE-319",
-                        "owasp": "A07:2021 - Identification and Authentication Failures",
-                        "recommendation": "Usar HTTPS obligatorio con autenticación basada en tokens (JWT, OAuth2) o sesiones seguras. Evitar HTTP Basic en producción.",
-                        "references": [
-                            "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/04-Authentication_Testing/",
-                            "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
-                        ],
-                        "evidence": {
-                            "url": self.target_url,
+                    self._add_finding(
+                        vulnerability="Autenticación HTTP Basic detectada",
+                        severity="medium",
+                        url=self.target_url,
+                        payload=None,
+                        details={
+                            "type": "weak_authentication",
+                            "cvss": 5.3,
+                            "cwe": "CWE-319",
+                            "owasp": "A07:2021 - Identification and Authentication Failures",
+                            "description": "El sitio utiliza autenticación HTTP Basic, que transmite credenciales en Base64 (fácilmente decodificable). Sin HTTPS, las credenciales se envían en texto plano.",
                             "auth_type": "HTTP Basic",
                             "header": auth_header,
-                            "vulnerable": True
+                            "vulnerable": True,
+                            "recommendation": "Usar HTTPS obligatorio con autenticación basada en tokens (JWT, OAuth2) o sesiones seguras. Evitar HTTP Basic en producción.",
+                            "references": [
+                                "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/04-Authentication_Testing/",
+                                "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+                            ]
                         }
-                    }
-                    self.findings.append(finding)
+                    )
                     self.logger.warning("[AUTH] Autenticación HTTP Basic detectada")
                     
                     # Probar credenciales por defecto en HTTP Basic
@@ -165,27 +161,27 @@ class AuthModule(VulnerabilityModule):
                 )
                 
                 if response.status_code == 200:
-                    finding = {
-                        "type": "default_credentials",
-                        "severity": "critical",
-                        "title": f"Credenciales por defecto en HTTP Basic: {username}:{password}",
-                        "description": f"El sitio acepta credenciales por defecto '{username}:{password}' en autenticación HTTP Basic. Esto permite acceso no autorizado.",
-                        "cvss": 9.8,
-                        "cwe": "CWE-798",
-                        "owasp": "A07:2021 - Identification and Authentication Failures",
-                        "recommendation": "Cambiar inmediatamente todas las credenciales por defecto. Implementar política de contraseñas fuertes y autenticación multifactor.",
-                        "references": [
-                            "https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication",
-                            "https://cwe.mitre.org/data/definitions/798.html"
-                        ],
-                        "evidence": {
-                            "url": self.target_url,
+                    self._add_finding(
+                        vulnerability=f"Credenciales por defecto en HTTP Basic: {username}:{password}",
+                        severity="critical",
+                        url=self.target_url,
+                        payload=f"{username}:{password}",
+                        details={
+                            "type": "default_credentials",
+                            "cvss": 9.8,
+                            "cwe": "CWE-798",
+                            "owasp": "A07:2021 - Identification and Authentication Failures",
+                            "description": f"El sitio acepta credenciales por defecto '{username}:{password}' en autenticación HTTP Basic. Esto permite acceso no autorizado.",
                             "username": username,
                             "password": password,
-                            "vulnerable": True
+                            "vulnerable": True,
+                            "recommendation": "Cambiar inmediatamente todas las credenciales por defecto. Implementar política de contraseñas fuertes y autenticación multifactor.",
+                            "references": [
+                                "https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication",
+                                "https://cwe.mitre.org/data/definitions/798.html"
+                            ]
                         }
-                    }
-                    self.findings.append(finding)
+                    )
                     self.logger.critical(f"[AUTH] Credenciales por defecto funcionan: {username}:{password}")
                     return  # Una credencial exitosa es suficiente
                 
@@ -199,7 +195,10 @@ class AuthModule(VulnerabilityModule):
         login_forms = []
         
         try:
-            response = requests.get(self.target_url, timeout=self.timeout)
+            response = self._make_request(self.target_url)
+            if not response:
+                return login_forms
+            
             soup = BeautifulSoup(response.text, 'html.parser')
             
             # Buscar formularios
@@ -255,34 +254,36 @@ class AuthModule(VulnerabilityModule):
             for path in common_login_paths:
                 try:
                     test_url = urljoin(base_url, path)
-                    resp = requests.get(test_url, timeout=self.timeout)
+                    resp = self._make_request(test_url)
                     
-                    if resp.status_code == 200:
-                        soup = BeautifulSoup(resp.text, 'html.parser')
-                        forms = soup.find_all('form')
+                    if not resp or resp.status_code != 200:
+                        continue
+                    
+                    soup = BeautifulSoup(resp.text, 'html.parser')
+                    forms = soup.find_all('form')
+                    
+                    for form in forms:
+                        method = form.get('method', 'post').upper()
+                        action = form.get('action', '')
+                        action_url = urljoin(test_url, action) if action else test_url
                         
-                        for form in forms:
-                            method = form.get('method', 'post').upper()
-                            action = form.get('action', '')
-                            action_url = urljoin(test_url, action) if action else test_url
-                            
-                            fields = {}
-                            inputs = form.find_all(['input', 'textarea'])
-                            
-                            for inp in inputs:
-                                name = inp.get('name')
-                                if name:
-                                    fields[name] = {
-                                        'type': inp.get('type', 'text').lower(),
-                                        'value': inp.get('value', '')
-                                    }
-                            
-                            if fields:
-                                login_forms.append({
-                                    'url': action_url,
-                                    'method': method,
-                                    'fields': fields
-                                })
+                        fields = {}
+                        inputs = form.find_all(['input', 'textarea'])
+                        
+                        for inp in inputs:
+                            name = inp.get('name')
+                            if name:
+                                fields[name] = {
+                                    'type': inp.get('type', 'text').lower(),
+                                    'value': inp.get('value', '')
+                                }
+                        
+                        if fields:
+                            login_forms.append({
+                                'url': action_url,
+                                'method': method,
+                                'fields': fields
+                            })
                 except:
                     pass
             
@@ -340,30 +341,30 @@ class AuthModule(VulnerabilityModule):
                     
                     # Verificar si el login fue exitoso
                     if self._is_login_successful(response):
-                        finding = {
-                            "type": "default_credentials",
-                            "severity": "critical",
-                            "title": f"Credenciales por defecto: {username}:{password}",
-                            "description": f"El formulario de login acepta credenciales por defecto '{username}:{password}'. Esto permite acceso no autorizado al sistema.",
-                            "cvss": 9.8,
-                            "cwe": "CWE-798",
-                            "owasp": "A07:2021 - Identification and Authentication Failures",
-                            "recommendation": "Cambiar inmediatamente todas las credenciales por defecto. Implementar política de contraseñas fuertes, autenticación multifactor y bloqueo de cuentas tras intentos fallidos.",
-                            "references": [
-                                "https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication",
-                                "https://cwe.mitre.org/data/definitions/798.html"
-                            ],
-                            "evidence": {
-                                "url": form['url'],
+                        self._add_finding(
+                            vulnerability=f"Credenciales por defecto: {username}:{password}",
+                            severity="critical",
+                            url=form['url'],
+                            payload=f"{username}:{password}",
+                            details={
+                                "type": "default_credentials",
+                                "cvss": 9.8,
+                                "cwe": "CWE-798",
+                                "owasp": "A07:2021 - Identification and Authentication Failures",
+                                "description": f"El formulario de login acepta credenciales por defecto '{username}:{password}'. Esto permite acceso no autorizado al sistema.",
                                 "method": form['method'],
                                 "username_field": username_field,
                                 "password_field": password_field,
                                 "username": username,
                                 "password": password,
-                                "vulnerable": True
+                                "vulnerable": True,
+                                "recommendation": "Cambiar inmediatamente todas las credenciales por defecto. Implementar política de contraseñas fuertes, autenticación multifactor y bloqueo de cuentas tras intentos fallidos.",
+                                "references": [
+                                    "https://owasp.org/www-project-top-ten/2017/A2_2017-Broken_Authentication",
+                                    "https://cwe.mitre.org/data/definitions/798.html"
+                                ]
                             }
-                        }
-                        self.findings.append(finding)
+                        )
                         self.logger.critical(f"[AUTH] Credenciales por defecto funcionan: {username}:{password}")
                         return  # Una credencial exitosa es suficiente
                     
@@ -416,8 +417,9 @@ class AuthModule(VulnerabilityModule):
                 
                 for i in range(attempts):
                     data = {username_field: f"testuser{i}", password_field: f"wrongpass{i}"}
-                    response = requests.post(form['url'], data=data, timeout=self.timeout)
-                    responses.append(response)
+                    response = self._make_request(form['url'], method='POST', data=data)
+                    if response:
+                        responses.append(response)
                     time.sleep(0.5)
                 
                 # Verificar si hay rate limiting o bloqueo
@@ -426,27 +428,27 @@ class AuthModule(VulnerabilityModule):
                 
                 # Si todos los intentos tienen el mismo código y tiempo similar, no hay protección
                 if len(set(status_codes)) == 1 and max(response_times) - min(response_times) < 1:
-                    finding = {
-                        "type": "no_brute_force_protection",
-                        "severity": "medium",
-                        "title": "Sin protección contra fuerza bruta",
-                        "description": f"El formulario de login en '{form['url']}' no implementa protecciones contra ataques de fuerza bruta. No se detectó rate limiting, CAPTCHA o bloqueo de cuenta.",
-                        "cvss": 5.3,
-                        "cwe": "CWE-307",
-                        "owasp": "A07:2021 - Identification and Authentication Failures",
-                        "recommendation": "Implementar rate limiting, CAPTCHA tras intentos fallidos, bloqueo temporal de cuenta, y monitoreo de intentos de login sospechosos.",
-                        "references": [
-                            "https://owasp.org/www-community/controls/Blocking_Brute_Force_Attacks",
-                            "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
-                        ],
-                        "evidence": {
-                            "url": form['url'],
+                    self._add_finding(
+                        vulnerability="Sin protección contra fuerza bruta",
+                        severity="medium",
+                        url=form['url'],
+                        payload=None,
+                        details={
+                            "type": "no_brute_force_protection",
+                            "cvss": 5.3,
+                            "cwe": "CWE-307",
+                            "owasp": "A07:2021 - Identification and Authentication Failures",
+                            "description": f"El formulario de login en '{form['url']}' no implementa protecciones contra ataques de fuerza bruta. No se detectó rate limiting, CAPTCHA o bloqueo de cuenta.",
                             "attempts_tested": attempts,
                             "all_same_response": True,
-                            "vulnerable": True
+                            "vulnerable": True,
+                            "recommendation": "Implementar rate limiting, CAPTCHA tras intentos fallidos, bloqueo temporal de cuenta, y monitoreo de intentos de login sospechosos.",
+                            "references": [
+                                "https://owasp.org/www-community/controls/Blocking_Brute_Force_Attacks",
+                                "https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html"
+                            ]
                         }
-                    }
-                    self.findings.append(finding)
+                    )
                     self.logger.warning("[AUTH] Sin protección contra fuerza bruta detectada")
                 
             except Exception as e:
@@ -455,66 +457,29 @@ class AuthModule(VulnerabilityModule):
     def _check_insecure_configs(self):
         """Verifica configuraciones inseguras de autenticación."""
         try:
-            response = requests.get(self.target_url, timeout=self.timeout)
-            
             # Verificar si usa HTTP en lugar de HTTPS
             if self.target_url.startswith('http://'):
-                finding = {
-                    "type": "insecure_transport",
-                    "severity": "high",
-                    "title": "Autenticación sobre HTTP (sin cifrado)",
-                    "description": "El sitio no usa HTTPS, lo que significa que las credenciales se transmiten sin cifrado y pueden ser interceptadas.",
-                    "cvss": 7.5,
-                    "cwe": "CWE-319",
-                    "owasp": "A02:2021 - Cryptographic Failures",
-                    "recommendation": "Implementar HTTPS obligatorio con certificado SSL/TLS válido. Redirigir todo el tráfico HTTP a HTTPS.",
-                    "references": [
-                        "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/",
-                        "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
-                    ],
-                    "evidence": {
-                        "url": self.target_url,
+                self._add_finding(
+                    vulnerability="Autenticación sobre HTTP (sin cifrado)",
+                    severity="high",
+                    url=self.target_url,
+                    payload=None,
+                    details={
+                        "type": "insecure_transport",
+                        "cvss": 7.5,
+                        "cwe": "CWE-319",
+                        "owasp": "A02:2021 - Cryptographic Failures",
+                        "description": "El sitio no usa HTTPS, lo que significa que las credenciales se transmiten sin cifrado y pueden ser interceptadas.",
                         "protocol": "HTTP",
-                        "vulnerable": True
+                        "vulnerable": True,
+                        "recommendation": "Implementar HTTPS obligatorio con certificado SSL/TLS válido. Redirigir todo el tráfico HTTP a HTTPS.",
+                        "references": [
+                            "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/09-Testing_for_Weak_Cryptography/",
+                            "https://cheatsheetseries.owasp.org/cheatsheets/Transport_Layer_Protection_Cheat_Sheet.html"
+                        ]
                     }
-                }
-                self.findings.append(finding)
+                )
                 self.logger.warning("[AUTH] Sitio usa HTTP sin cifrado")
             
         except Exception as e:
             self.logger.debug(f"[AUTH] Error verificando configuraciones inseguras: {e}")
-
-    def _export_results(self):
-        """Exporta los hallazgos a JSON."""
-        try:
-            os.makedirs(self.report_dir, exist_ok=True)
-            
-            output_data = {
-                "scan_info": {
-                    "target": self.target_url,
-                    "timestamp": self.scan_timestamp,
-                    "module": "authentication",
-                    "total_findings": len(self.findings),
-                    "tested_forms": len(self.tested_forms)
-                },
-                "findings": self.findings,
-                "summary": {
-                    "critical": len([f for f in self.findings if f["severity"] == "critical"]),
-                    "high": len([f for f in self.findings if f["severity"] == "high"]),
-                    "medium": len([f for f in self.findings if f["severity"] == "medium"]),
-                    "low": len([f for f in self.findings if f["severity"] == "low"])
-                }
-            }
-            
-            output_path = os.path.join(self.report_dir, "auth_findings.json")
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(output_data, f, indent=2, ensure_ascii=False)
-            
-            self.logger.info(f"[AUTH] Resultados exportados en: {output_path}")
-            
-        except Exception as e:
-            self.logger.error(f"[AUTH] Error al exportar resultados: {e}")
-
-    def get_results(self):
-        """Devuelve los hallazgos encontrados."""
-        return self.findings
