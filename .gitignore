@@ -54,6 +54,7 @@ playwright-report/
 # Otros
 *.bak
 *.old
+tmp_sqlmap
 
 # Jupyter Notebooks
 .ipynb_checkpoints/

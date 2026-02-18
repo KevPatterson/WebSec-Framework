@@ -199,6 +199,9 @@ class XXEModule(VulnerabilityModule):
             if not self._accepts_xml(endpoint):
                 continue
             
+            # Obtener respuesta baseline para comparación
+            baseline_response = self._get_baseline_response(endpoint)
+            
             for payload in self.BASIC_PAYLOADS:
                 try:
                     # Enviar payload XXE
@@ -225,10 +228,25 @@ class XXEModule(VulnerabilityModule):
                             allow_redirects=True
                         )
                     
+                    # CRÍTICO: Verificar que no sea página de error 404
+                    if response.status_code == 404:
+                        self.logger.debug(f"[XXE] Endpoint {endpoint['url']} devuelve 404 - no existe")
+                        break  # No probar más payloads en este endpoint
+                    
+                    # CRÍTICO: Verificar que no sea página de error HTML genérica
+                    if self._is_html_error_page(response.text):
+                        self.logger.debug(f"[XXE] Endpoint {endpoint['url']} devuelve página de error HTML")
+                        break  # No probar más payloads en este endpoint
+                    
+                    # Comparar con baseline si existe
+                    if baseline_response and self._is_same_response(baseline_response, response):
+                        self.logger.debug(f"[XXE] Respuesta idéntica a baseline - no vulnerable")
+                        continue
+                    
                     # Verificar si hay evidencia de XXE
                     evidence = self._detect_xxe_evidence(response.text, payload)
                     
-                    if evidence:
+                    if evidence and self._is_real_xxe_evidence(evidence, response.text):
                         severity = "critical" if "passwd" in payload or "win.ini" in payload else "high"
                         
                         finding = {
@@ -251,7 +269,8 @@ class XXEModule(VulnerabilityModule):
                                 "payload": payload[:200] + "..." if len(payload) > 200 else payload,
                                 "evidence_found": evidence,
                                 "response_snippet": self._get_context_snippet(response.text, evidence),
-                                "vulnerable": True
+                                "vulnerable": True,
+                                "status_code": response.status_code
                             }
                         }
                         
@@ -284,12 +303,114 @@ class XXEModule(VulnerabilityModule):
                 allow_redirects=True
             )
             
-            # Si no devuelve 415 (Unsupported Media Type), probablemente acepta XML
-            if response.status_code != 415:
-                return True
+            # Si devuelve 415 (Unsupported Media Type), no acepta XML
+            if response.status_code == 415:
+                return False
+            
+            # Si devuelve 404, el endpoint no existe
+            if response.status_code == 404:
+                return False
+            
+            # Si devuelve página de error HTML, probablemente no acepta XML
+            if self._is_html_error_page(response.text):
+                return False
+            
+            return True
             
         except Exception as e:
             self.logger.debug(f"[XXE] Error verificando XML en {endpoint['url']}: {e}")
+        
+        return False
+    
+    def _get_baseline_response(self, endpoint):
+        """Obtiene respuesta baseline (sin payload malicioso)."""
+        try:
+            simple_xml = '<?xml version="1.0"?><root><data>test</data></root>'
+            headers = {
+                'Content-Type': 'application/xml',
+                'Accept': 'application/xml, text/xml, */*'
+            }
+            
+            response = requests.request(
+                endpoint['method'],
+                endpoint['url'],
+                data=simple_xml,
+                headers=headers,
+                timeout=self.timeout,
+                allow_redirects=True
+            )
+            
+            return {
+                'status_code': response.status_code,
+                'text': response.text,
+                'length': len(response.text)
+            }
+        except:
+            return None
+    
+    def _is_same_response(self, baseline, response):
+        """Compara si dos respuestas son esencialmente iguales."""
+        if not baseline:
+            return False
+        
+        # Comparar status codes
+        if baseline['status_code'] != response.status_code:
+            return False
+        
+        # Comparar longitudes (con margen de error del 5%)
+        length_diff = abs(baseline['length'] - len(response.text))
+        if length_diff > baseline['length'] * 0.05:
+            return False
+        
+        return True
+    
+    def _is_html_error_page(self, text):
+        """Detecta si es una página de error HTML genérica."""
+        if not text:
+            return False
+        
+        # Indicadores de páginas de error comunes
+        error_indicators = [
+            r'<!DOCTYPE html>.*?(404|not found|error)',
+            r'<html.*?>.*?(404|not found|page not found)',
+            r'__next',  # Next.js
+            r'__variable_',  # Next.js variables
+            r'vercel',
+            r'<title>.*?(404|error|not found)',
+            r'<h1>.*?(404|not found|error)',
+        ]
+        
+        # Verificar si es HTML
+        if not re.search(r'<!DOCTYPE html>|<html', text, re.IGNORECASE):
+            return False
+        
+        # Buscar indicadores de error
+        for pattern in error_indicators:
+            if re.search(pattern, text, re.IGNORECASE | re.DOTALL):
+                return True
+        
+        return False
+    
+    def _is_real_xxe_evidence(self, evidence, response_text):
+        """Verifica si la evidencia es realmente de XXE y no un falso positivo."""
+        # Si solo detectó "<html", es falso positivo
+        if evidence == '<html':
+            return False
+        
+        # Buscar evidencia REAL de archivos del sistema
+        real_evidence_patterns = [
+            r'root:.*:0:0:',  # /etc/passwd
+            r'/bin/bash',
+            r'/bin/sh',
+            r'daemon:.*:1:1:',
+            r'\[fonts\]',  # win.ini
+            r'for 16-bit app support',
+            r'\[extensions\]',
+        ]
+        
+        for pattern in real_evidence_patterns:
+            if re.search(pattern, response_text):
+                return True
         
         return False
 

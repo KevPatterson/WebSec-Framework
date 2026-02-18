@@ -25,6 +25,17 @@ python run.py --help
 
 ## ✨ Características Destacadas
 
+### 📊 Reportes HTML Profesionales con Sección de Explotación (v0.8.0)
+- **POCs reales y funcionales** para cada vulnerabilidad detectada
+- **Pasos detallados de explotación** paso a paso
+- **Herramientas recomendadas** para cada tipo de ataque
+- **Impacto potencial** claramente explicado
+- **Comandos listos para usar** (SQLMap, curl, reverse shells, etc.)
+- **Diseño visual distintivo** con código resaltado
+- **Cobertura completa**: XSS, SQLi, CSRF, LFI, SSRF, XXE, CORS, Auth, Headers, Command Injection
+
+📖 **[Ver Documentación de Explotación](docs/EXPLOITATION_SECTION.md)**
+
 ### 🔍 Sistema de Validación Avanzado (v0.5.0)
 - **Comparación de respuestas baseline** con cache inteligente
 - **Scoring de confianza (0-100)** por cada hallazgo

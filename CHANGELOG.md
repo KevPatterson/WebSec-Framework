@@ -4,6 +4,98 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 
 ---
 
+## [v0.8.0] - 2026-02-17
+
+### 🎉 Añadido - Sección de Explotación con POCs Reales de GitHub
+
+#### Nueva Funcionalidad: Información Detallada de Explotación
+
+##### Sección de Explotación por Vulnerabilidad
+- **core/html_reporter.py**: Nueva función `_generate_exploitation_info()`
+  - Genera información de explotación específica para cada tipo de vulnerabilidad
+  - POCs personalizados basados en el payload detectado
+  - Integración con módulo de recursos de GitHub
+  - Pasos detallados de explotación paso a paso
+  - Descripción del impacto potencial
+
+##### Nuevo Módulo de Recursos (core/exploitation_resources.py)
+- **Centralización de recursos**: Todos los enlaces a GitHub en un solo lugar
+- **10 funciones especializadas**: Una por cada tipo de vulnerabilidad
+- **Fácil mantenimiento**: Actualizar enlaces sin tocar el código principal
+- **Mapeo automático**: Detecta el tipo de vulnerabilidad y carga recursos apropiados
+- **50+ enlaces a GitHub**: PayloadsAllTheThings, repositorios especializados, cheat sheets
+- **30+ herramientas**: Con enlaces directos a sus repositorios
+
+##### Tres Niveles de POCs
+1. **🎯 POC Específico (Detectado)**: Generado automáticamente con URL, parámetro y payload real
+2. **🔗 POCs Reales en GitHub**: Enlaces a repositorios verificados y mantenidos
+3. **💡 Ejemplos Genéricos**: POCs de ejemplo para entender técnicas
+
+##### Enlaces a Recursos Reales
+- **PayloadsAllTheThings**: Colecciones completas por tipo de vulnerabilidad
+- **Repositorios especializados**: XSS Payloads List, SQL Injection Payload List, etc.
+- **Herramientas con enlaces**: XSStrike, SQLMap, BeEF, Commix, etc.
+- **Cheat sheets**: OWASP, PentestMonkey, HackTricks
+- **Laboratorios**: Para practicar técnicas
+
+##### Tipos de Vulnerabilidades Soportadas (10)
+- **XSS**: 3 POCs GitHub + 3 herramientas
+- **SQL Injection**: 3 POCs GitHub + 3 herramientas
+- **CSRF**: 2 POCs GitHub + 2 herramientas
+- **LFI**: 2 POCs GitHub + 2 herramientas
+- **SSRF**: 2 POCs GitHub + 2 herramientas
+- **Command Injection**: 2 POCs GitHub + 2 herramientas
+- **XXE**: 2 POCs GitHub + 2 herramientas
+- **CORS**: 2 POCs GitHub + 2 herramientas
+- **Auth Bypass**: 2 POCs GitHub + 2 herramientas
+- **Security Headers**: 2 POCs GitHub + 2 herramientas
+
+##### Características de los POCs
+- **300+ líneas de POCs** reales por tipo de vulnerabilidad
+- **Comandos listos para usar**: curl, SQLMap, nc, python, php
+- **Personalización automática**: URLs, parámetros y payloads específicos
+- **Múltiples técnicas**: Básicas, intermedias y avanzadas
+- **Bypass de filtros**: Técnicas de evasión incluidas
+
+##### Diseño Visual
+- **templates/professional_report.html**: Nueva sección de explotación
+  - Fondo amarillo distintivo (#fff3cd) para destacar información crítica
+  - Borde naranja (#ff9800) para llamar la atención
+  - Código con fondo oscuro (#2d2d2d) para POCs
+  - Tipografía monoespaciada para código
+  - Formato responsive y accesible
+  - Iconos visuales: ⚠️ 💣 🛠️ 💥
+
+##### Testing
+- **tests/test_exploitation_section.py**: Script de prueba completo
+  - Genera reporte con 9 tipos de vulnerabilidades
+  - Verifica presencia de sección de explotación
+  - Valida POCs y estilos CSS
+  - Salida: reports/test_exploitation_report.html
+
+##### Documentación
+- **docs/EXPLOITATION_SECTION.md**: Documentación completa
+  - Descripción de características
+  - Ejemplos de POCs por tipo
+  - Guía de uso y personalización
+  - Consideraciones de seguridad
+  - Referencias y recursos
+
+#### Mejoras en Reportes
+- Información más accionable y práctica
+- Mejor comprensión del impacto real
+- Facilita la validación de vulnerabilidades
+- Mejora la calidad profesional de los reportes
+- Valor educativo para el equipo de seguridad
+
+#### Seguridad
+- **Escape automático de POCs**: Todos los POCs se escapan correctamente usando `|e` en Jinja2
+- **Prevención de XSS**: Los tags HTML en POCs se convierten a entidades HTML
+- **Sin ejecución de código**: Los POCs se muestran como texto plano, no como código ejecutable
+- **Script de verificación**: `tests/verify_no_redirect.py` valida la seguridad del reporte
+
+---
+
 ## [v0.7.0] - 2026-02-16
 
 ### 🎉 Añadido - Integración Completa de Módulos de Vulnerabilidad

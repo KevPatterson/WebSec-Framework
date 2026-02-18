@@ -264,6 +264,109 @@
             overflow-x: auto;
         }
         
+        .exploitation-section {
+            background: #fff3cd;
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        .exploitation-section h5 {
+            color: #ff6b00;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        
+        .exploitation-section ol, .exploitation-section ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+        
+        .exploitation-section li {
+            margin: 8px 0;
+        }
+        
+        .exploitation-section .evidence {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .exploitation-section .evidence pre {
+            margin: 0;
+            padding: 0;
+            background: transparent;
+            color: inherit;
+            font-family: inherit;
+            font-size: inherit;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        
+        .exploitation-section .poc-specific {
+            background: #1e3a5f;
+            border-left: 4px solid #4CAF50;
+        }
+        
+        .github-pocs {
+            margin: 15px 0;
+        }
+        
+        .github-poc-item {
+            background: white;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 5px;
+            border-left: 3px solid #667eea;
+        }
+        
+        .github-poc-item a {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 1em;
+        }
+        
+        .github-poc-item a:hover {
+            text-decoration: underline;
+        }
+        
+        .github-poc-item p {
+            margin: 5px 0 0 0;
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .tools-list {
+            margin: 10px 0;
+        }
+        
+        .tool-item {
+            background: white;
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 5px;
+            border-left: 3px solid #ff9800;
+        }
+        
+        .tool-item a {
+            color: #ff6b00;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .tool-item a:hover {
+            text-decoration: underline;
+        }
+        
         .filters {
             margin-bottom: 20px;
             display: flex;
@@ -596,6 +699,70 @@
                             <div id="details-{{ loop.index0 }}" class="finding-details">
                                 <h4>📋 Descripción</h4>
                                 <p>{{ finding.description }}</p>
+                                
+                                <h4>⚠️ Cómo Explotar Esta Vulnerabilidad</h4>
+                                <div class="exploitation-section">
+                                    {% if finding.exploitation %}
+                                    <p>{{ finding.exploitation.description|e }}</p>
+                                    
+                                    {% if finding.exploitation.steps %}
+                                    <h5>Pasos de Explotación:</h5>
+                                    <ol>
+                                        {% for step in finding.exploitation.steps %}
+                                        <li>{{ step|e }}</li>
+                                        {% endfor %}
+                                    </ol>
+                                    {% endif %}
+                                    
+                                    {% if finding.exploitation.poc_specific %}
+                                    <h5>🎯 POC Específico (Detectado en el Escaneo):</h5>
+                                    <div class="evidence poc-specific"><pre>{{ finding.exploitation.poc_specific|e }}</pre></div>
+                                    {% endif %}
+                                    
+                                    {% if finding.exploitation.github_pocs %}
+                                    <h5>🔗 POCs Reales en GitHub:</h5>
+                                    <div class="github-pocs">
+                                        {% for poc in finding.exploitation.github_pocs %}
+                                        <div class="github-poc-item">
+                                            <a href="{{ poc.url }}" target="_blank" rel="noopener noreferrer">
+                                                <strong>{{ poc.name }}</strong>
+                                            </a>
+                                            <p>{{ poc.description }}</p>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if finding.exploitation.poc %}
+                                    <h5>💡 Ejemplos de POCs Genéricos:</h5>
+                                    <div class="evidence"><pre>{{ finding.exploitation.poc|e }}</pre></div>
+                                    {% endif %}
+                                    
+                                    {% if finding.exploitation.tools %}
+                                    <h5>🛠️ Herramientas Recomendadas:</h5>
+                                    <div class="tools-list">
+                                        {% for tool in finding.exploitation.tools %}
+                                        <div class="tool-item">
+                                            {% if tool is mapping %}
+                                            <a href="{{ tool.url }}" target="_blank" rel="noopener noreferrer">
+                                                <strong>{{ tool.name }}</strong>
+                                            </a> - {{ tool.description }}
+                                            {% else %}
+                                            {{ tool|e }}
+                                            {% endif %}
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    
+                                    {% if finding.exploitation.impact %}
+                                    <h5>💥 Impacto Potencial:</h5>
+                                    <p>{{ finding.exploitation.impact|e }}</p>
+                                    {% endif %}
+                                    {% else %}
+                                    <p><em>No se ha generado información de explotación específica para esta vulnerabilidad.</em></p>
+                                    {% endif %}
+                                </div>
                                 
                                 <h4>💡 Recomendación</h4>
                                 <p>{{ finding.recommendation }}</p>

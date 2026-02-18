@@ -54,7 +54,7 @@ class Validator:
             dict: Hallazgo validado con score de confianza
         """
         try:
-            vuln_type = finding.get('vulnerability', '').lower()
+            vuln_type = finding.get('type', finding.get('vulnerability', '')).lower()
             
             # Aplicar validación según tipo de vulnerabilidad
             if 'sqli' in vuln_type or 'sql injection' in vuln_type:
@@ -67,6 +67,14 @@ class Validator:
                 return self._validate_csrf(finding)
             elif 'cors' in vuln_type:
                 return self._validate_cors(finding)
+            elif 'xxe' in vuln_type:
+                return self._validate_xxe(finding)
+            elif 'ssrf' in vuln_type:
+                return self._validate_ssrf(finding)
+            elif 'cmdi' in vuln_type or 'command' in vuln_type:
+                return self._validate_cmdi(finding)
+            elif 'auth' in vuln_type:
+                return self._validate_auth(finding)
             else:
                 # Validación genérica
                 return self._validate_generic(finding)
@@ -349,23 +357,31 @@ class Validator:
         
         confidence = 70  # Base alto (CSRF es más directo)
         
-        vuln_subtype = finding.get('vulnerability', '')
+        vuln_subtype = finding.get('type', '')
+        status_code = finding.get('details', {}).get('status_code', 0)
         
-        # 1. Missing Token es muy confiable
-        if 'Missing Token' in vuln_subtype:
+        # CRÍTICO: Reducir confianza si el endpoint devuelve 404
+        if status_code == 404:
+            confidence = 40  # Endpoint no existe
+            finding['validation_notes'] = 'Endpoint devuelve 404 - probablemente no existe'
+        
+        # 1. Missing Token es muy confiable (si el endpoint existe)
+        elif 'Missing Token' in vuln_subtype or 'missing_token' in vuln_subtype:
             confidence = 85
         
         # 2. Missing SameSite es confiable
-        elif 'Missing SameSite' in vuln_subtype:
+        elif 'Missing SameSite' in vuln_subtype or 'missing_samesite' in vuln_subtype:
             confidence = 80
         
         # 3. Validación de Origin puede tener falsos positivos
-        elif 'Origin' in vuln_subtype or 'Referer' in vuln_subtype:
-            confidence = 65
+        elif 'Origin' in vuln_subtype or 'Referer' in vuln_subtype or 'origin_validation' in vuln_subtype:
+            if status_code in [200, 201, 204]:
+                confidence = 70  # Endpoint responde correctamente
+            else:
+                confidence = 50  # Endpoint responde con error
         
         # 4. Endpoints desprotegidos necesitan más validación
-        elif 'Unprotected Endpoint' in vuln_subtype:
-            status_code = finding.get('details', {}).get('status_code', 0)
+        elif 'Unprotected Endpoint' in vuln_subtype or 'unprotected' in vuln_subtype:
             if status_code in [200, 201, 204]:
                 confidence = 70
             else:
@@ -407,6 +423,179 @@ class Validator:
         # 5. Reflexión arbitraria es confiable
         elif 'Arbitrary Origin Reflection' in vuln_subtype:
             confidence = 80
+        
+        finding['confidence_score'] = confidence
+        finding['validation_status'] = 'validated' if confidence >= self.thresholds['min_confidence'] else 'low_confidence'
+        
+        return finding
+    
+    def _validate_xxe(self, finding):
+        """Valida hallazgos de XXE con detección de falsos positivos."""
+        self.logger.debug(f"Validando XXE: {finding.get('evidence', {}).get('url')}")
+        
+        confidence = 30  # Base MUY bajo para XXE
+        
+        evidence = finding.get('evidence', {}).get('evidence_found', '')
+        response_snippet = finding.get('evidence', {}).get('response_snippet', '')
+        url = finding.get('evidence', {}).get('url', '')
+        
+        # 1. CRÍTICO: Verificar que NO sea una página de error HTML genérica
+        html_error_indicators = [
+            r'<!DOCTYPE html>',
+            r'<html.*?>',
+            r'404.*not found',
+            r'page not found',
+            r'__next',  # Next.js
+            r'__variable_',  # Next.js variables
+            r'vercel',
+            r'<title>.*?(404|error|not found)',
+            r'<h1>.*?(404|not found|error)',
+        ]
+        
+        is_html_error = False
+        for pattern in html_error_indicators:
+            if re.search(pattern, response_snippet, re.IGNORECASE):
+                is_html_error = True
+                confidence = 10  # Muy probablemente falso positivo
+                finding['validation_notes'] = 'Respuesta parece ser página de error HTML genérica'
+                break
+        
+        # 2. Buscar evidencia REAL de XXE
+        real_xxe_evidence = [
+            r'root:.*:0:0:',  # /etc/passwd
+            r'/bin/bash',
+            r'/bin/sh',
+            r'daemon:.*:1:1:',
+            r'\[fonts\]',  # win.ini
+            r'for 16-bit app support',
+            r'\[extensions\]',
+        ]
+        
+        has_real_evidence = False
+        for pattern in real_xxe_evidence:
+            if re.search(pattern, response_snippet):
+                confidence += 60
+                has_real_evidence = True
+                finding['validation_notes'] = 'Evidencia real de XXE detectada'
+                break
+        
+        # 3. Verificar status code del endpoint
+        status_code = finding.get('evidence', {}).get('status_code')
+        if status_code == 404:
+            confidence = 5  # Endpoint no existe
+            finding['validation_notes'] = 'Endpoint devuelve 404 - no existe'
+        elif status_code and status_code >= 400:
+            confidence -= 20
+        
+        # 4. Verificar longitud de respuesta (páginas HTML completas son sospechosas)
+        if len(response_snippet) > 1000 and not has_real_evidence:
+            confidence -= 15
+            finding['validation_notes'] = finding.get('validation_notes', '') + ' | Respuesta muy larga - probablemente página HTML completa'
+        
+        # 5. Si solo detectó "<html" como evidencia, es falso positivo
+        if evidence == '<html' and is_html_error:
+            confidence = 5
+            finding['validation_notes'] = 'Solo detectó tag HTML - falso positivo'
+        
+        # 6. Verificar si el endpoint tiene sentido para XML
+        xml_keywords = ['xml', 'soap', 'api', 'upload', 'import']
+        if not any(keyword in url.lower() for keyword in xml_keywords):
+            confidence -= 10
+        
+        finding['confidence_score'] = max(confidence, 0)
+        finding['validation_status'] = 'validated' if confidence >= self.thresholds['min_confidence'] else 'low_confidence'
+        
+        return finding
+    
+    def _validate_ssrf(self, finding):
+        """Valida hallazgos de SSRF."""
+        self.logger.debug(f"Validando SSRF: {finding.get('url')}")
+        
+        confidence = 50  # Base medio
+        
+        # 1. Verificar evidencia de acceso interno
+        evidence = finding.get('details', {}).get('evidence', '')
+        if evidence:
+            # Evidencia de metadata endpoints
+            if 'latest/meta-data' in evidence or 'metadata.google.internal' in evidence:
+                confidence += 40
+            # Evidencia de respuesta localhost
+            elif 'localhost' in evidence or '127.0.0.1' in evidence:
+                confidence += 30
+        
+        # 2. Verificar diferencia de respuesta
+        length_diff = finding.get('details', {}).get('length_diff', 0)
+        if length_diff > 100:
+            confidence += 15
+        
+        # 3. Verificar tipo de SSRF
+        if 'metadata' in finding.get('title', '').lower():
+            confidence += 10  # Metadata access es más crítico
+        
+        finding['confidence_score'] = min(confidence, 100)
+        finding['validation_status'] = 'validated' if confidence >= self.thresholds['min_confidence'] else 'low_confidence'
+        
+        return finding
+    
+    def _validate_cmdi(self, finding):
+        """Valida hallazgos de Command Injection."""
+        self.logger.debug(f"Validando CMDI: {finding.get('url')}")
+        
+        confidence = 50  # Base medio
+        
+        # 1. Verificar evidencia de ejecución de comandos
+        evidence = finding.get('details', {}).get('evidence', [])
+        if evidence:
+            # Evidencia fuerte: uid, gid, root
+            strong_patterns = ['uid=', 'gid=', 'root', 'Directory of']
+            if any(pattern in str(evidence) for pattern in strong_patterns):
+                confidence += 35
+            else:
+                confidence += 15
+        
+        # 2. Verificar tipo de detección
+        detection_type = finding.get('details', {}).get('type', '')
+        if detection_type == 'output-based':
+            confidence += 10  # Más confiable que time-based
+        elif detection_type == 'time-based':
+            confidence += 5
+        
+        # 3. Verificar payload usado
+        payload = finding.get('payload', '')
+        if payload and ('sleep' in payload or 'timeout' in payload):
+            confidence -= 10  # Time-based puede tener falsos positivos
+        
+        finding['confidence_score'] = min(confidence, 100)
+        finding['validation_status'] = 'validated' if confidence >= self.thresholds['min_confidence'] else 'low_confidence'
+        
+        return finding
+    
+    def _validate_auth(self, finding):
+        """Valida hallazgos de autenticación."""
+        self.logger.debug(f"Validando Auth: {finding.get('url')}")
+        
+        confidence = 70  # Base alto (auth es verificable)
+        
+        vuln_subtype = finding.get('type', '')
+        
+        # 1. Credenciales por defecto exitosas
+        if 'default_credentials' in vuln_subtype:
+            status_code = finding.get('details', {}).get('status_code', 0)
+            if status_code in [200, 302]:
+                confidence = 90  # Muy confiable
+            else:
+                confidence = 50
+        
+        # 2. HTTP Basic Auth sin HTTPS
+        elif 'http_basic_auth' in vuln_subtype:
+            if finding.get('url', '').startswith('http://'):
+                confidence = 85
+            else:
+                confidence = 60
+        
+        # 3. Sin rate limiting
+        elif 'no_rate_limiting' in vuln_subtype:
+            confidence = 65  # Necesita más validación manual
         
         finding['confidence_score'] = confidence
         finding['validation_status'] = 'validated' if confidence >= self.thresholds['min_confidence'] else 'low_confidence'

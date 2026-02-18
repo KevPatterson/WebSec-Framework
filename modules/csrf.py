@@ -215,8 +215,14 @@ class CSRFModule(VulnerabilityModule):
                         headers = {'Origin': origin}
                         response = self.session.post(endpoint, headers=headers, timeout=5)
                         
-                        # Si acepta el request sin validar Origin
-                        if response.status_code not in [403, 401]:
+                        # CRÍTICO: Filtrar endpoints que no existen (404)
+                        if response.status_code == 404:
+                            self.logger.debug(f"[CSRF] Endpoint {endpoint} devuelve 404 - no existe")
+                            break  # No probar más origins en este endpoint
+                        
+                        # CRÍTICO: Solo reportar endpoints que responden correctamente
+                        # Si acepta el request sin validar Origin Y el endpoint existe
+                        if response.status_code in [200, 201, 204]:
                             finding = {
                                 "type": "csrf_missing_origin_validation",
                                 "severity": "high",
