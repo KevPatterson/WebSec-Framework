@@ -3,9 +3,7 @@ Integración profesional con Nmap usando python-nmap
 Permite ejecutar escaneos de puertos, detección de servicios y OS fingerprinting.
 """
 import os
-import platform
-import shutil
-from core.logger import get_logger
+from core.external.base_runner import BaseExternalRunner
 
 try:
     import nmap
@@ -14,7 +12,7 @@ except ImportError:
     NMAP_AVAILABLE = False
 
 
-class NmapRunner:
+class NmapRunner(BaseExternalRunner):
     """
     Clase para orquestar la ejecución de Nmap desde el framework.
     - Usa python-nmap para integración nativa con Python
@@ -25,10 +23,8 @@ class NmapRunner:
     DEFAULT_TIMEOUT = 300  # 5 minutos para escaneos completos
     
     def __init__(self, config):
-        self.config = config
-        self.logger = get_logger("nmap")
+        super().__init__(config)
         self.nmap_path = config.get("nmap_path", "nmap")
-        self.timeout = config.get("nmap_timeout", self.DEFAULT_TIMEOUT)
         
         if not NMAP_AVAILABLE:
             self.logger.error("python-nmap no está instalado. Instálalo con: pip install python-nmap")
@@ -45,6 +41,18 @@ class NmapRunner:
     def is_available(self):
         """Verifica si nmap está disponible y funcional."""
         return NMAP_AVAILABLE and self.nm is not None
+    
+    def run(self, target, ports="1-1000", arguments="-sV", sudo=False, **kwargs):
+        """
+        Escanea puertos en el objetivo (implementa interfaz BaseExternalRunner).
+        
+        :param target: IP o hostname a escanear
+        :param ports: Rango de puertos (ej: "1-1000", "80,443,8080")
+        :param arguments: Argumentos de nmap (ej: "-sV" para detección de servicios)
+        :param sudo: Si se requieren privilegios de root (para -O, -sS, etc.)
+        :return: dict con resultados del escaneo
+        """
+        return self.scan_ports(target, ports, arguments, sudo)
     
     def scan_ports(self, target, ports="1-1000", arguments="-sV", sudo=False):
         """
@@ -66,46 +74,9 @@ class NmapRunner:
             # Ejecutar escaneo
             self.nm.scan(hosts=target, ports=ports, arguments=arguments, sudo=sudo)
             
-            results = {
-                "target": target,
-                "scan_info": self.nm.scaninfo(),
-                "hosts": {}
-            }
+            results = self.parse_results(self.nm)
             
-            # Procesar resultados por host
-            for host in self.nm.all_hosts():
-                host_info = {
-                    "hostname": self.nm[host].hostname(),
-                    "state": self.nm[host].state(),
-                    "protocols": {},
-                    "os": {}
-                }
-                
-                # Información de protocolos y puertos
-                for proto in self.nm[host].all_protocols():
-                    ports_info = {}
-                    lport = self.nm[host][proto].keys()
-                    
-                    for port in lport:
-                        port_data = self.nm[host][proto][port]
-                        ports_info[port] = {
-                            "state": port_data.get("state", "unknown"),
-                            "name": port_data.get("name", ""),
-                            "product": port_data.get("product", ""),
-                            "version": port_data.get("version", ""),
-                            "extrainfo": port_data.get("extrainfo", ""),
-                            "cpe": port_data.get("cpe", "")
-                        }
-                    
-                    host_info["protocols"][proto] = ports_info
-                
-                # Información de OS (si está disponible)
-                if "osmatch" in self.nm[host]:
-                    host_info["os"]["matches"] = self.nm[host]["osmatch"]
-                
-                results["hosts"][host] = host_info
-            
-            self.logger.info(f"Escaneo completado: {len(results['hosts'])} host(s) encontrado(s)")
+            self.logger.info(f"Escaneo completado: {len(results.get('hosts', {}))} host(s) encontrado(s)")
             return results
             
         except nmap.PortScannerError as e:
@@ -114,6 +85,52 @@ class NmapRunner:
         except Exception as e:
             self.logger.error(f"Error inesperado en escaneo: {e}")
             return None
+    
+    def parse_results(self, nm_scanner):
+        """
+        Parsea resultados de nmap (implementa interfaz BaseExternalRunner).
+        
+        :param nm_scanner: Objeto PortScanner con resultados
+        :return: dict con resultados parseados
+        """
+        results = {
+            "scan_info": nm_scanner.scaninfo(),
+            "hosts": {}
+        }
+        
+        for host in nm_scanner.all_hosts():
+            host_info = {
+                "hostname": nm_scanner[host].hostname(),
+                "state": nm_scanner[host].state(),
+                "protocols": {},
+                "os": {}
+            }
+            
+            # Información de protocolos y puertos
+            for proto in nm_scanner[host].all_protocols():
+                ports_info = {}
+                lport = nm_scanner[host][proto].keys()
+                
+                for port in lport:
+                    port_data = nm_scanner[host][proto][port]
+                    ports_info[port] = {
+                        "state": port_data.get("state", "unknown"),
+                        "name": port_data.get("name", ""),
+                        "product": port_data.get("product", ""),
+                        "version": port_data.get("version", ""),
+                        "extrainfo": port_data.get("extrainfo", ""),
+                        "cpe": port_data.get("cpe", "")
+                    }
+                
+                host_info["protocols"][proto] = ports_info
+            
+            # Información de OS (si está disponible)
+            if "osmatch" in nm_scanner[host]:
+                host_info["os"]["matches"] = nm_scanner[host]["osmatch"]
+            
+            results["hosts"][host] = host_info
+        
+        return results
     
     def quick_scan(self, target):
         """
@@ -182,27 +199,4 @@ class NmapRunner:
         
         return summary
     
-    def export_results(self, scan_results, output_file):
-        """
-        Exporta los resultados a un archivo JSON.
-        
-        :param scan_results: Resultados de scan_ports()
-        :param output_file: Ruta del archivo de salida
-        """
-        if not scan_results:
-            self.logger.warning("No hay resultados para exportar")
-            return False
-        
-        try:
-            import json
-            os.makedirs(os.path.dirname(output_file), exist_ok=True)
-            
-            with open(output_file, "w", encoding="utf-8") as f:
-                json.dump(scan_results, f, indent=2, ensure_ascii=False)
-            
-            self.logger.info(f"Resultados exportados a: {output_file}")
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Error al exportar resultados: {e}")
-            return False
+    # export_results heredado de BaseExternalRunner
