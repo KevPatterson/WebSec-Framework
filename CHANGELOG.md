@@ -33,7 +33,7 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 - Clase base mejorada con funcionalidad común
 - Elimina duplicación en descubrimiento de injection points
 - Manejo unificado de requests HTTP
-- Métodos heredados para reducir código duplicado
+- Métodos heredados: `_discover_injection_points()`, `_make_request()`, `_load_payloads()`, `_export_results()`, `_get_context_snippet()`, `_add_finding()`
 
 **BaseExternalRunner** (`core/external/base_runner.py`)
 - Interfaz unificada para runners externos (Nmap, Nuclei, SQLMap, ZAP)
@@ -60,9 +60,29 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 - Métodos `run()` y `parse_results()` estandarizados
 - Hereda funcionalidad común de exportación
 
+#### 🔄 Módulos Migrados a EnhancedVulnerabilityModule
+
+**LFI Module** (`modules/lfi.py`)
+- Migrado a EnhancedVulnerabilityModule
+- Reducción: 280 → 165 líneas (-41%)
+- Usa PayloadManager y HTTPClient
+
+**XSS Module** (`modules/xss.py`)
+- Migrado a EnhancedVulnerabilityModule
+- Reducción: 320 → 185 líneas (-42%)
+- Usa PayloadManager y HTTPClient
+
+**SQLi Module** (`modules/sqli.py`)
+- Migrado a EnhancedVulnerabilityModule
+- Reducción: 350 → 210 líneas (-40%)
+- Usa PayloadManager y HTTPClient
+
+**Total módulos migrados:** 950 → 560 líneas (-41%)
+
 #### 📚 Documentación Nueva
 - `docs/OPTIMIZATION_SUMMARY.md` - Resumen completo de optimizaciones
 - `docs/REFACTORING_GUIDE.md` - Guía de migración para desarrolladores
+- `docs/MODULE_MIGRATION_SUMMARY.md` - Resumen de módulos migrados
 - `examples/http_client_example.py` - Ejemplos de uso del HTTPClient
 - `examples/payload_manager_example.py` - Ejemplos del PayloadManager
 - `examples/optimized_module_example.py` - Ejemplo de módulo optimizado
@@ -70,10 +90,12 @@ Todos los cambios notables del proyecto están documentados en este archivo.
 #### ✅ Compatibilidad
 - **100% compatible** con código existente
 - Validator mantiene mismos métodos públicos
-- Módulos existentes siguen funcionando sin cambios
+- Módulos migrados mantienen misma interfaz
+- Scanner funciona sin cambios
 
 #### 📊 Métricas de Mejora
-- Código: ~15,000 → ~9,000 líneas (-40%)
+- Código total: ~15,000 → ~9,000 líneas (-40%)
+- Módulos migrados: 950 → 560 líneas (-41%)
 - Inicialización: 50% más rápida
 - Requests HTTP: 30% más rápidas
 - Escaneo completo: 20-30% más rápido

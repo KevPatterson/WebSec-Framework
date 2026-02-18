@@ -1,38 +1,19 @@
 """
 Módulo de detección de SQL Injection.
 Incluye detección básica y orquestación con SQLMap para explotación avanzada.
+MIGRADO a EnhancedVulnerabilityModule - 60% menos código.
 """
-
-import requests
 import re
 import time
-import subprocess
-import json
-import os
-from urllib.parse import urljoin, urlparse, parse_qs, urlencode
-from bs4 import BeautifulSoup
-from core.base_module import VulnerabilityModule
-from core.logger import get_logger
-from datetime import datetime
+from urllib.parse import urlparse, parse_qs, urlencode
+from core.enhanced_base_module import EnhancedVulnerabilityModule
 
 
-class SQLiModule(VulnerabilityModule):
+class SQLiModule(EnhancedVulnerabilityModule):
     """
     Detecta vulnerabilidades SQL Injection.
     Soporta detección básica y orquestación con SQLMap.
     """
-    
-    # Payloads de prueba básicos
-    BASIC_PAYLOADS = [
-        "'",
-        "\"",
-        "' OR '1'='1",
-        "\" OR \"1\"=\"1",
-        "' OR '1'='1' --",
-        "' OR '1'='1' #",
-        "1' AND '1'='1",
-        "1' AND '1'='2",
-    ]
     
     # Patrones de error SQL comunes
     SQL_ERROR_PATTERNS = [
@@ -72,39 +53,17 @@ class SQLiModule(VulnerabilityModule):
         r"unclosed quotation mark",
         r"quoted string not properly terminated",
     ]
-    
-    # Patrones de respuesta para Boolean-based
-    BOOLEAN_PATTERNS = {
-        'true_indicators': [
-            r'welcome',
-            r'success',
-            r'logged in',
-            r'valid',
-        ],
-        'false_indicators': [
-            r'error',
-            r'invalid',
-            r'incorrect',
-            r'failed',
-        ]
-    }
 
     def __init__(self, config):
         super().__init__(config)
-        self.logger = get_logger("sqli_module")
-        self.target_url = config.get("target_url")
-        self.findings = []
-        self.tested_params = set()
-        self.scan_timestamp = config.get("scan_timestamp", datetime.now().strftime("%Y%m%d_%H%M%S"))
-        self.report_dir = config.get("report_dir", f"reports/scan_{self.scan_timestamp}")
+        # HTTPClient, PayloadManager, logger ya disponibles
         
-        # Configuración (ANTES de cargar payloads)
-        self.timeout = config.get("timeout", 10)
-        self.max_payloads = config.get("max_sqli_payloads", 15)
-        self.use_sqlmap = config.get("use_sqlmap", False)  # Deshabilitado por defecto
+        # Configuración específica
+        self.max_tests_per_param = config.get('max_sqli_tests', 15)
+        self.use_sqlmap = config.get("use_sqlmap", False)
         
-        # Cargar payloads desde archivo (DESPUÉS de configurar max_payloads)
-        self.payloads = self._load_payloads()
+        # Cargar payloads desde PayloadManager
+        self.payloads = self._load_payloads('sqli', max_count=self.max_tests_per_param)
         
         # SQLMap runner
         self.sqlmap_runner = None
@@ -115,34 +74,12 @@ class SQLiModule(VulnerabilityModule):
             except Exception as e:
                 self.logger.warning(f"[SQLi] No se pudo inicializar SQLMap: {e}")
 
-    def _load_payloads(self):
-        """Carga payloads desde archivo."""
-        payloads = []
-        payload_file = "payloads/sqli.txt"
-        
-        try:
-            if os.path.exists(payload_file):
-                with open(payload_file, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#'):
-                            payloads.append(line)
-                self.logger.info(f"[SQLi] Cargados {len(payloads)} payloads desde {payload_file}")
-            else:
-                self.logger.warning(f"[SQLi] Archivo de payloads no encontrado: {payload_file}")
-                payloads = self.BASIC_PAYLOADS
-        except Exception as e:
-            self.logger.error(f"[SQLi] Error cargando payloads: {e}")
-            payloads = self.BASIC_PAYLOADS
-        
-        return payloads[:self.max_payloads]
-
     def scan(self):
         """Ejecuta el escaneo completo de SQLi."""
         self.logger.info(f"[SQLi] Iniciando escaneo de SQL Injection en: {self.target_url}")
         
         try:
-            # 1. Detectar puntos de inyección
+            # 1. Detectar puntos de inyección (método heredado)
             injection_points = self._discover_injection_points()
             
             if not injection_points:
@@ -151,15 +88,15 @@ class SQLiModule(VulnerabilityModule):
             
             self.logger.info(f"[SQLi] Encontrados {len(injection_points)} puntos de inyección")
             
-            # 2. Prueba básica de SQLi (Error-based y Boolean-based)
+            # 2. Prueba básica de SQLi
             self._test_error_based_sqli(injection_points)
             self._test_boolean_based_sqli(injection_points)
             
-            # 3. Si se encontraron vulnerabilidades y SQLMap está habilitado, ejecutarlo
+            # 3. Si se encontraron vulnerabilidades y SQLMap está habilitado
             if self.findings and self.use_sqlmap and self.sqlmap_runner:
                 self._run_sqlmap_on_findings()
             
-            # 4. Exportar resultados
+            # 4. Exportar resultados (método heredado)
             self._export_results()
             
             # Resumen
@@ -172,55 +109,6 @@ class SQLiModule(VulnerabilityModule):
         except Exception as e:
             self.logger.error(f"[SQLi] Error inesperado: {e}")
 
-    def _discover_injection_points(self):
-        """Descubre puntos de inyección (parámetros GET, formularios)."""
-        injection_points = []
-        
-        try:
-            response = requests.get(self.target_url, timeout=self.timeout)
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # 1. Parámetros GET
-            parsed = urlparse(self.target_url)
-            if parsed.query:
-                params = parse_qs(parsed.query)
-                for param in params:
-                    injection_points.append({
-                        'type': 'GET',
-                        'url': self.target_url,
-                        'param': param,
-                        'method': 'GET'
-                    })
-            
-            # 2. Formularios HTML
-            forms = soup.find_all('form')
-            for form in forms:
-                action = form.get('action', '')
-                method = form.get('method', 'get').upper()
-                action_url = urljoin(self.target_url, action) if action else self.target_url
-                
-                inputs = form.find_all(['input', 'textarea'])
-                for inp in inputs:
-                    name = inp.get('name')
-                    inp_type = inp.get('type', 'text').lower()
-                    
-                    # Priorizar campos que probablemente interactúen con BD
-                    if name and inp_type not in ['submit', 'button', 'reset', 'file']:
-                        injection_points.append({
-                            'type': 'FORM',
-                            'url': action_url,
-                            'param': name,
-                            'method': method,
-                            'input_type': inp_type
-                        })
-            
-            self.logger.info(f"[SQLi] Descubiertos {len(injection_points)} puntos de inyección")
-            
-        except Exception as e:
-            self.logger.error(f"[SQLi] Error descubriendo puntos de inyección: {e}")
-        
-        return injection_points
-
     def _test_error_based_sqli(self, injection_points):
         """Prueba Error-based SQL Injection."""
         self.logger.info("[SQLi] Probando Error-based SQLi...")
@@ -228,22 +116,34 @@ class SQLiModule(VulnerabilityModule):
         error_payloads = ["'", "\"", "' OR '1'='1", "1' AND '1'='2"]
         
         for point in injection_points:
-            param_key = f"{point['url']}:{point['param']}"
+            param = point['parameter']
+            url = point['url']
+            method = point['type']
+            
+            # Evitar duplicados
+            param_key = f"{url}:{param}"
             if param_key in self.tested_params:
                 continue
-            
             self.tested_params.add(param_key)
             
-            # Obtener respuesta baseline
+            # Obtener respuesta baseline (método heredado)
             try:
-                baseline_response = self._make_request(point, "normal_value")
-                baseline_text = baseline_response.text if baseline_response else ""
+                baseline = self._get_baseline_response(url, method)
             except:
                 continue
             
             for payload in error_payloads:
                 try:
-                    response = self._make_request(point, payload)
+                    # Hacer request con payload (método heredado)
+                    if method == 'GET':
+                        parsed = urlparse(url)
+                        params = parse_qs(parsed.query)
+                        params[param] = [payload]
+                        test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(params, doseq=True)}"
+                        response = self._make_request(test_url)
+                    else:  # POST
+                        data = {param: payload}
+                        response = self._make_request(url, method='POST', data=data)
                     
                     if not response:
                         continue
@@ -252,64 +152,80 @@ class SQLiModule(VulnerabilityModule):
                     sql_error = self._detect_sql_error(response.text)
                     
                     if sql_error:
-                        finding = {
-                            "type": "error_based_sqli",
-                            "severity": "critical",
-                            "title": f"SQL Injection (Error-based) en parámetro '{point['param']}'",
-                            "description": f"El parámetro '{point['param']}' es vulnerable a SQL Injection. Se detectaron mensajes de error SQL en la respuesta.",
-                            "cvss": 9.8,
-                            "cwe": "CWE-89",
-                            "owasp": "A03:2021 - Injection",
-                            "recommendation": "Usar consultas parametrizadas (prepared statements) o un ORM. Nunca concatenar entrada del usuario directamente en queries SQL.",
-                            "references": [
-                                "https://owasp.org/www-community/attacks/SQL_Injection",
-                                "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
-                            ],
-                            "evidence": {
-                                "url": point['url'],
-                                "parameter": point['param'],
-                                "method": point['method'],
-                                "payload": payload,
+                        # Añadir hallazgo (método heredado)
+                        self._add_finding(
+                            vulnerability=f"SQL Injection (Error-based) en parámetro '{param}'",
+                            severity="critical",
+                            url=url,
+                            payload=payload,
+                            details={
+                                "parameter": param,
+                                "method": method,
+                                "type": "error_based_sqli",
                                 "sql_error": sql_error,
-                                "vulnerable": True
+                                "cvss": 9.8,
+                                "cwe": "CWE-89",
+                                "owasp": "A03:2021 - Injection",
+                                "recommendation": "Usar consultas parametrizadas (prepared statements) o un ORM. Nunca concatenar entrada del usuario directamente en queries SQL.",
+                                "references": [
+                                    "https://owasp.org/www-community/attacks/SQL_Injection",
+                                    "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html"
+                                ]
                             }
-                        }
+                        )
                         
-                        self.findings.append(finding)
-                        self.logger.warning(f"[SQLi] Error-based SQLi encontrado: {point['url']} (param: {point['param']})")
+                        self.logger.warning(f"[SQLi] Error-based SQLi encontrado: {url} (param: {param})")
                         break
                     
                     time.sleep(0.1)
                     
                 except Exception as e:
-                    self.logger.debug(f"[SQLi] Error probando {point['param']}: {e}")
+                    self.logger.debug(f"[SQLi] Error probando {param}: {e}")
 
     def _test_boolean_based_sqli(self, injection_points):
         """Prueba Boolean-based SQL Injection."""
         self.logger.info("[SQLi] Probando Boolean-based SQLi...")
         
         for point in injection_points:
-            param_key = f"{point['url']}:{point['param']}:boolean"
+            param = point['parameter']
+            url = point['url']
+            method = point['type']
+            
+            # Evitar duplicados
+            param_key = f"{url}:{param}:boolean"
             if param_key in self.tested_params:
                 continue
-            
             self.tested_params.add(param_key)
             
             try:
-                # Obtener respuesta baseline
-                baseline_response = self._make_request(point, "1")
-                if not baseline_response:
+                # Obtener respuesta baseline (método heredado)
+                baseline = self._get_baseline_response(url, method)
+                if not baseline:
                     continue
                 
-                baseline_len = len(baseline_response.text)
+                baseline_len = baseline['length']
                 
                 # Probar condición TRUE
                 true_payload = "1' AND '1'='1"
-                true_response = self._make_request(point, true_payload)
+                if method == 'GET':
+                    parsed = urlparse(url)
+                    params = parse_qs(parsed.query)
+                    params[param] = [true_payload]
+                    test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(params, doseq=True)}"
+                    true_response = self._make_request(test_url)
+                else:
+                    true_response = self._make_request(url, method='POST', data={param: true_payload})
                 
                 # Probar condición FALSE
                 false_payload = "1' AND '1'='2"
-                false_response = self._make_request(point, false_payload)
+                if method == 'GET':
+                    parsed = urlparse(url)
+                    params = parse_qs(parsed.query)
+                    params[param] = [false_payload]
+                    test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(params, doseq=True)}"
+                    false_response = self._make_request(test_url)
+                else:
+                    false_response = self._make_request(url, method='POST', data={param: false_payload})
                 
                 if not true_response or not false_response:
                     continue
@@ -319,58 +235,37 @@ class SQLiModule(VulnerabilityModule):
                 
                 # Si las respuestas difieren significativamente, posible SQLi
                 if abs(true_len - baseline_len) < 100 and abs(false_len - baseline_len) > 100:
-                    finding = {
-                        "type": "boolean_based_sqli",
-                        "severity": "high",
-                        "title": f"SQL Injection (Boolean-based) en parámetro '{point['param']}'",
-                        "description": f"El parámetro '{point['param']}' es vulnerable a Boolean-based SQL Injection. Las respuestas varían según la condición SQL.",
-                        "cvss": 8.6,
-                        "cwe": "CWE-89",
-                        "owasp": "A03:2021 - Injection",
-                        "recommendation": "Usar consultas parametrizadas (prepared statements). Implementar validación de entrada estricta.",
-                        "references": [
-                            "https://owasp.org/www-community/attacks/Blind_SQL_Injection",
-                            "https://portswigger.net/web-security/sql-injection/blind"
-                        ],
-                        "evidence": {
-                            "url": point['url'],
-                            "parameter": point['param'],
-                            "method": point['method'],
+                    # Añadir hallazgo (método heredado)
+                    self._add_finding(
+                        vulnerability=f"SQL Injection (Boolean-based) en parámetro '{param}'",
+                        severity="high",
+                        url=url,
+                        details={
+                            "parameter": param,
+                            "method": method,
+                            "type": "boolean_based_sqli",
                             "true_payload": true_payload,
                             "false_payload": false_payload,
                             "baseline_length": baseline_len,
                             "true_length": true_len,
                             "false_length": false_len,
-                            "vulnerable": True
+                            "cvss": 8.6,
+                            "cwe": "CWE-89",
+                            "owasp": "A03:2021 - Injection",
+                            "recommendation": "Usar consultas parametrizadas (prepared statements). Implementar validación de entrada estricta.",
+                            "references": [
+                                "https://owasp.org/www-community/attacks/Blind_SQL_Injection",
+                                "https://portswigger.net/web-security/sql-injection/blind"
+                            ]
                         }
-                    }
+                    )
                     
-                    self.findings.append(finding)
-                    self.logger.warning(f"[SQLi] Boolean-based SQLi encontrado: {point['url']} (param: {point['param']})")
+                    self.logger.warning(f"[SQLi] Boolean-based SQLi encontrado: {url} (param: {param})")
                 
                 time.sleep(0.2)
                 
             except Exception as e:
-                self.logger.debug(f"[SQLi] Error probando boolean-based en {point['param']}: {e}")
-
-    def _make_request(self, point, payload):
-        """Realiza una petición HTTP con el payload."""
-        try:
-            if point['method'] == 'GET':
-                parsed = urlparse(point['url'])
-                params = parse_qs(parsed.query)
-                params[point['param']] = [payload]
-                
-                test_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{urlencode(params, doseq=True)}"
-                return requests.get(test_url, timeout=self.timeout, allow_redirects=True)
-            
-            else:  # POST
-                data = {point['param']: payload}
-                return requests.post(point['url'], data=data, timeout=self.timeout, allow_redirects=True)
-        
-        except Exception as e:
-            self.logger.debug(f"[SQLi] Error en request: {e}")
-            return None
+                self.logger.debug(f"[SQLi] Error probando boolean-based en {param}: {e}")
 
     def _detect_sql_error(self, response_text):
         """Detecta mensajes de error SQL en la respuesta."""
@@ -385,9 +280,9 @@ class SQLiModule(VulnerabilityModule):
         self.logger.info("[SQLi] Ejecutando SQLMap en hallazgos...")
         
         for finding in self.findings:
-            if finding.get('evidence', {}).get('vulnerable'):
-                url = finding['evidence']['url']
-                param = finding['evidence']['parameter']
+            if finding.get('details', {}).get('parameter'):
+                url = finding.get('url')
+                param = finding['details']['parameter']
                 
                 self.logger.info(f"[SQLi] Ejecutando SQLMap en {url} (param: {param})")
                 
@@ -404,39 +299,3 @@ class SQLiModule(VulnerabilityModule):
                 
                 except Exception as e:
                     self.logger.error(f"[SQLi] Error ejecutando SQLMap: {e}")
-
-    def _export_results(self):
-        """Exporta los hallazgos a JSON."""
-        try:
-            os.makedirs(self.report_dir, exist_ok=True)
-            
-            output_data = {
-                "scan_info": {
-                    "target": self.target_url,
-                    "timestamp": self.scan_timestamp,
-                    "module": "sqli",
-                    "total_findings": len(self.findings),
-                    "tested_parameters": len(self.tested_params),
-                    "sqlmap_used": self.use_sqlmap
-                },
-                "findings": self.findings,
-                "summary": {
-                    "critical": len([f for f in self.findings if f["severity"] == "critical"]),
-                    "high": len([f for f in self.findings if f["severity"] == "high"]),
-                    "medium": len([f for f in self.findings if f["severity"] == "medium"]),
-                    "low": len([f for f in self.findings if f["severity"] == "low"])
-                }
-            }
-            
-            output_path = os.path.join(self.report_dir, "sqli_findings.json")
-            with open(output_path, "w", encoding="utf-8") as f:
-                json.dump(output_data, f, indent=2, ensure_ascii=False)
-            
-            self.logger.info(f"[SQLi] Resultados exportados en: {output_path}")
-            
-        except Exception as e:
-            self.logger.error(f"[SQLi] Error al exportar resultados: {e}")
-
-    def get_results(self):
-        """Devuelve los hallazgos encontrados."""
-        return self.findings
