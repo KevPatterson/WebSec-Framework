@@ -23,6 +23,7 @@ from modules.lfi import LFIModule
 from modules.xxe import XXEModule
 from modules.ssrf import SSRFModule
 from modules.cmdi import CommandInjectionModule
+from modules.port_scan import PortScanModule
 
 
 
@@ -361,6 +362,22 @@ INTEGRACION CON OWASP ZAP
                           (por defecto: json)
 
 ================================================================================
+INTEGRACION CON NMAP - ESCANEO DE PUERTOS (NUEVO v0.8.0)
+================================================================================
+
+    --nmap                Ejecuta Nmap para escaneo de puertos
+    --nmap-scan-type <type>
+                          Tipo de escaneo: quick, full, service, vuln
+                          (por defecto: quick)
+    --nmap-ports <ports>  Puertos a escanear (ej: "80,443,8080" o "1-1000")
+                          (por defecto: puertos comunes en quick scan)
+    --nmap-detect-os      Activar deteccion de sistema operativo
+                          (requiere privilegios de administrador)
+    --nmap-timeout <n>    Timeout en segundos (por defecto: 300)
+    --nmap-output <archivo>
+                          Guardar salida de Nmap en archivo JSON
+
+================================================================================
 FLUJO DE EJECUCION
 ================================================================================
 
@@ -431,8 +448,18 @@ Escaneo con ZAP (modo rapido):
 Escaneo con ZAP (modo completo):
     python run.py https://example.com --zap --zap-mode full --zap-ajax-spider
 
-Escaneo combinado (Nuclei + SQLMap + ZAP):
-    python run.py https://example.com --nuclei --sqlmap --zap
+Escaneo combinado (Nmap + Nuclei + SQLMap + ZAP):
+    python run.py https://example.com --nmap --nuclei --sqlmap --zap
+
+Escaneo con Nmap (puertos comunes):
+    python run.py https://example.com --nmap
+
+Escaneo completo con Nmap:
+    python run.py https://example.com --nmap --nmap-scan-type full
+
+Escaneo de servicios con Nmap:
+    python run.py https://example.com --nmap --nmap-scan-type service --nmap-ports "1-1000"
+
 
 Escaneo con headers personalizados:
     python run.py https://example.com --nuclei ^
@@ -583,6 +610,20 @@ def main():
     parser.add_argument("--zap-timeout", type=int, default=600, help="Timeout en segundos (por defecto: 600)")
     parser.add_argument("--zap-output", help="Guardar salida de ZAP en archivo")
     parser.add_argument("--zap-format", default="json", choices=["json", "xml", "html"], help="Formato de salida (por defecto: json)")
+    
+    # Argumentos de Nmap
+    parser.add_argument('--nmap', action='store_true', help='Ejecutar Nmap para escaneo de puertos')
+    parser.add_argument('--nmap-scan-type', type=str, default='quick', 
+                        help='Tipo de escaneo: quick, full, service, vuln (default: quick)')
+    parser.add_argument('--nmap-ports', type=str, default=None,
+                        help='Puertos a escanear (ej: "80,443,8080" o "1-1000")')
+    parser.add_argument('--nmap-detect-os', action='store_true',
+                        help='Activar detección de OS (requiere privilegios)')
+    parser.add_argument('--nmap-timeout', type=int, default=300,
+                        help='Timeout en segundos (default: 300)')
+    parser.add_argument('--nmap-output', type=str, default=None,
+                        help='Guardar salida de Nmap en archivo JSON')
+
 
     args = parser.parse_args()
 
@@ -659,6 +700,15 @@ def main():
             scanner.register_module(SSRFModule(scanner.config))
             scanner.register_module(CommandInjectionModule(scanner.config))
             scanner.register_module(AuthModule(scanner.config))
+            
+            # Registrar módulo de Port Scan (Nmap) si está habilitado
+            if args.nmap:
+                scanner.config["nmap_scan_type"] = args.nmap_scan_type
+                scanner.config["nmap_ports"] = args.nmap_ports
+                scanner.config["nmap_detect_os"] = args.nmap_detect_os
+                scanner.config["nmap_timeout"] = args.nmap_timeout
+                scanner.register_module(PortScanModule(scanner.config))
+            
             scanner.run()
             return scanner
         
@@ -985,6 +1035,80 @@ def main():
         except Exception as e:
             print(f"[!] Error ejecutando ZAP: {e}")
             print(f"[!] Asegúrate de tener Java 11+ instalado: https://adoptium.net/")
+    
+    # Integración con Nmap
+    if args.nmap:
+        print("\n=== Ejecutando Nmap ===")
+        from core.external.nmap_runner import NmapRunner
+        
+        nmap_config = {
+            "nmap_timeout": args.nmap_timeout,
+            "nmap_scan_type": args.nmap_scan_type
+        }
+        nmap = NmapRunner(nmap_config)
+        
+        if not nmap.is_available():
+            print("[!] Nmap no está disponible. Instala nmap y python-nmap:")
+            print("    - Nmap: https://nmap.org/download.html")
+            print("    - python-nmap: pip install python-nmap")
+        else:
+            # Extraer host del target
+            from urllib.parse import urlparse
+            parsed = urlparse(args.target)
+            target_host = parsed.hostname or parsed.netloc or args.target
+            
+            print(f"[*] Target: {target_host}")
+            print(f"[*] Scan Type: {args.nmap_scan_type}")
+            if args.nmap_ports:
+                print(f"[*] Ports: {args.nmap_ports}")
+            if args.nmap_detect_os:
+                print(f"[*] OS Detection: Enabled (requires privileges)")
+            
+            try:
+                # Ejecutar escaneo según el tipo
+                if args.nmap_scan_type == "quick":
+                    nmap_results = nmap.quick_scan(target_host)
+                elif args.nmap_scan_type == "full":
+                    nmap_results = nmap.full_scan(target_host, detect_os=args.nmap_detect_os)
+                elif args.nmap_scan_type == "service":
+                    ports = args.nmap_ports or "1-1000"
+                    nmap_results = nmap.service_scan(target_host, ports=ports)
+                elif args.nmap_scan_type == "vuln":
+                    ports = args.nmap_ports or "1-1000"
+                    nmap_results = nmap.vulnerability_scan(target_host, ports=ports)
+                else:
+                    print(f"[!] Tipo de escaneo desconocido: {args.nmap_scan_type}")
+                    nmap_results = None
+                
+                if nmap_results:
+                    # Obtener resumen de puertos abiertos
+                    summary = nmap.get_open_ports_summary(nmap_results)
+                    
+                    print(f"\n[+] Escaneo completado: {len(summary)} puerto(s) abierto(s)")
+                    
+                    # Mostrar resumen
+                    for port_info in summary[:10]:  # Mostrar primeros 10
+                        service_str = f"{port_info['service']}"
+                        if port_info['product']:
+                            service_str += f" ({port_info['product']}"
+                            if port_info['version']:
+                                service_str += f" {port_info['version']}"
+                            service_str += ")"
+                        
+                        print(f"  - {port_info['port']}/{port_info['protocol']}: {service_str}")
+                    
+                    if len(summary) > 10:
+                        print(f"  ... y {len(summary) - 10} puerto(s) más")
+                    
+                    # Guardar resultados si se especificó
+                    if args.nmap_output:
+                        nmap.export_results(nmap_results, args.nmap_output)
+                        print(f"[+] Resultados de Nmap guardados en {args.nmap_output}")
+                else:
+                    print("[!] No se obtuvieron resultados del escaneo")
+            
+            except Exception as e:
+                print(f"[!] Error ejecutando Nmap: {e}")
 
 if __name__ == "__main__":
     main()

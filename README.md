@@ -62,6 +62,7 @@ python run.py --help
 - ✅ **Nuclei** - Template-based scanner (ProjectDiscovery)
 - ✅ **SQLMap** - SQL Injection detection & exploitation
 - ✅ **OWASP ZAP** - Web application security scanner
+- ✅ **Nmap** - Port scanning & service detection (python-nmap)
 - 🚀 Instalación automática con `install_tools.py`
 - 🎯 Ejecución integrada desde `run.py`
 
@@ -334,6 +335,7 @@ python run.py --help
 - [Nuclei](https://github.com/projectdiscovery/nuclei) (ProjectDiscovery)
 - [OWASP ZAP](https://www.zaproxy.org/)
 - [sqlmap](https://sqlmap.org/)
+- [Nmap](https://nmap.org/) con [python-nmap](https://pypi.org/project/python-nmap/)
 - [Playwright](https://playwright.dev/python/) (para crawling JS)
 - [PyYAML](https://pyyaml.org/) (opcional para exportar YAML)
 - [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)
@@ -564,6 +566,29 @@ Cada módulo implementa la interfaz `VulnerabilityModule` con métodos `scan()` 
 
 El framework integra y orquesta herramientas líderes de seguridad:
 
+### Nmap - Port Scanning & Service Detection
+Escaneo de puertos, detección de servicios y fingerprinting de OS.
+
+```bash
+# Escaneo rápido de puertos comunes
+python run.py https://example.com --nmap
+
+# Escaneo completo de todos los puertos
+python run.py https://example.com --nmap --nmap-scan-type full
+
+# Escaneo de servicios
+python run.py https://example.com --nmap --nmap-scan-type service
+
+# Escaneo de vulnerabilidades
+python run.py https://example.com --nmap --nmap-scan-type vuln
+
+# Puertos personalizados
+python run.py https://example.com --nmap --nmap-ports "80,443,8080"
+
+# Con detección de OS (requiere privilegios)
+python run.py https://example.com --nmap --nmap-detect-os
+```
+
 ### Nuclei - Template-based Scanner
 Escaneo rápido basado en templates para detectar vulnerabilidades conocidas.
 
@@ -621,10 +646,11 @@ Ejecuta múltiples herramientas en un solo comando:
 
 ```bash
 # Escaneo completo con todas las herramientas
-python run.py https://example.com --nuclei --sqlmap --zap
+python run.py https://example.com --nmap --nuclei --sqlmap --zap
 
 # Con configuración personalizada
 python run.py https://example.com \
+    --nmap --nmap-scan-type quick \
     --nuclei --nuclei-severity high,critical \
     --sqlmap --sqlmap-risk 2 \
     --zap --zap-mode baseline
@@ -638,11 +664,12 @@ python install_tools.py
 ```
 
 **Instalación manual:**
+- **Nmap**: https://nmap.org/download.html + `pip install python-nmap`
 - **Nuclei**: https://github.com/projectdiscovery/nuclei/releases
 - **SQLMap**: https://github.com/sqlmapproject/sqlmap
 - **OWASP ZAP**: https://www.zaproxy.org/download/
 
-📖 **[Guía Completa de Instalación](INSTALL_TOOLS_WINDOWS.md)** | **[Documentación de Integraciones](docs/EXTERNAL_INTEGRATIONS.md)**
+📖 **[Guía Completa de Instalación](INSTALL_TOOLS_WINDOWS.md)** | **[Documentación de Integraciones](docs/EXTERNAL_INTEGRATIONS.md)** | **[Documentación de Nmap](docs/NMAP_INTEGRATION.md)**
 
 ## Configuración y personalización
 
@@ -849,7 +876,27 @@ websec-framework/
 
 ## Cambios recientes
 
-### v0.7.0 (Febrero 2026) - ACTUAL 🎉
+### v0.8.0 (Febrero 2026) - ACTUAL 🎉
+- ✅ **Integración de Nmap**: Escaneo de puertos y detección de servicios
+  - **NmapRunner**: Integración completa con python-nmap
+  - **PortScanModule**: Módulo de escaneo de puertos con análisis de severidad
+  - **4 tipos de escaneo**: Quick, Full, Service, Vulnerability
+  - **Detección de OS**: Fingerprinting de sistemas operativos
+  - **Análisis de servicios**: Detección de versiones y productos
+  - **Recomendaciones automáticas**: Por tipo de servicio y puerto
+  - **Documentación completa**: docs/NMAP_INTEGRATION.md
+  - **Tests incluidos**: tests/test_nmap_integration.py
+- ✅ **Sección de Explotación en Reportes HTML**: POCs reales y funcionales
+  - **10 módulos con POCs**: XSS, SQLi, CSRF, LFI, SSRF, XXE, CORS, Auth, Headers, CMDI
+  - **Comandos listos para usar**: SQLMap, curl, reverse shells, etc.
+  - **Pasos detallados**: Guías paso a paso para cada vulnerabilidad
+  - **Herramientas recomendadas**: Para cada tipo de ataque
+  - **Impacto potencial**: Claramente explicado
+  - **Diseño distintivo**: Código resaltado y visual profesional
+  - **Documentación**: docs/EXPLOITATION_SECTION.md
+  - **Ejemplos**: docs/EXPLOITATION_POC_EXAMPLES.md
+
+### v0.7.0 (Febrero 2026)
 - ✅ **4 Nuevos Módulos de Vulnerabilidad**: Implementación completa
   - **XXE (XML External Entity)**: 6 payloads, detección de lectura de archivos y SSRF
   - **SSRF (Server-Side Request Forgery)**: 15+ payloads, detección de metadata endpoints
