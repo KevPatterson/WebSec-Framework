@@ -1,109 +1,219 @@
-# WebSec Framework
+<div align="center">
 
-**WebSec Framework** es una plataforma modular y profesional para el análisis de seguridad en aplicaciones web. Automatiza el descubrimiento de vulnerabilidades, validación inteligente de hallazgos, fingerprinting tecnológico y generación de reportes avanzados. Incluye un sistema de validación que reduce falsos positivos en ~76% mediante comparación de respuestas baseline y scoring de confianza multi-factor.
+# 🛡️ WebSec Framework
 
-## 🎯 Versión 0.9.0 - Optimización y Refactorización
+### Framework Profesional de Análisis de Seguridad Web
 
-### ⚡ Mejoras de Performance
-- **40% menos código duplicado** - Arquitectura refactorizada
-- **30-50% más rápido** - Session pooling y caching inteligente
-- **50% más rápida inicialización** - Carga única de payloads
-- **20-30% más rápido escaneo** - Caching de respuestas baseline
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Version](https://img.shields.io/badge/version-0.9.0-green.svg)](CHANGELOG.md)
+[![OWASP Coverage](https://img.shields.io/badge/OWASP%20Top%2010-100%25-success.svg)](https://owasp.org/www-project-top-ten/)
 
-### 🏗️ Arquitectura Mejorada
-- **HTTPClient centralizado** - Session pooling y caching automático
-- **PayloadManager con Singleton** - Carga única de payloads
-- **EnhancedVulnerabilityModule** - Clase base con funcionalidad común
-- **Sistema de validación modular** - Patrón estrategia para validadores
-- **BaseExternalRunner** - Interfaz unificada para herramientas externas
+**WebSec Framework** es una plataforma modular y profesional para el análisis de seguridad en aplicaciones web. Automatiza el descubrimiento de vulnerabilidades, validación inteligente de hallazgos, fingerprinting tecnológico y generación de reportes avanzados.
 
-📖 **[Ver Resumen de Optimizaciones](docs/OPTIMIZATION_SUMMARY.md)**
-📖 **[Ver Guía de Refactorización](docs/REFACTORING_GUIDE.md)**
+[Características](#-características-principales) •
+[Instalación](#-instalación-rápida) •
+[Uso](#-uso-básico) •
+[Documentación](#-documentación) •
+[Contribuir](#-contribuciones)
+
+</div>
+
+---
+
+## 🎯 ¿Por Qué WebSec Framework?
+
+### 🚀 Potente y Completo
+- **10 módulos de vulnerabilidad** con cobertura 100% de OWASP Top 10 2021
+- **300+ payloads** optimizados para detección precisa
+- **Sistema de validación inteligente** que reduce falsos positivos en ~76%
+- **Integración con herramientas líderes**: Nmap, Nuclei, SQLMap, OWASP ZAP
+
+### ⚡ Rápido y Eficiente
+- **40% menos código duplicado** mediante arquitectura refactorizada
+- **30-50% más rápido** con session pooling y caching inteligente
+- **Escaneo concurrente** para máxima velocidad
+- **Carga única de payloads** para inicialización instantánea
+
+### 📊 Reportes Profesionales
+- **Dashboard interactivo** estilo Acunetix/Burp Suite
+- **Gráficos Chart.js** con distribución de vulnerabilidades
+- **Exportación automática a PDF** con wkhtmltopdf
+- **Sección de explotación** con POCs reales de GitHub
+
+### 🔧 Modular y Extensible
+- **Arquitectura limpia** con patrones de diseño profesionales
+- **Fácil de extender** con nuevos módulos
+- **API bien documentada** para integración
+- **Código mantenible** y bien estructurado
 
 ## 🚀 Inicio Rápido
 
 ```bash
-# Instalar dependencias
+# 1. Clonar el repositorio
+git clone https://github.com/tu-usuario/websec-framework.git
+cd websec-framework
+
+# 2. Instalar dependencias
 pip install -r requirements.txt
 
-# Ejecutar escaneo completo con validación automática
+# 3. Ejecutar primer escaneo
 python run.py https://example.com
 
-# Escaneo rápido sin crawling (solo vulnerabilidades)
+# 4. Ver reporte HTML generado
+# Abre: reports/scan_TIMESTAMP/vulnerability_report.html
+```
+
+### Ejemplos de Uso
+
+```bash
+# Escaneo completo con todas las herramientas
+python run.py https://example.com --nmap --nuclei --export-pdf
+
+# Escaneo rápido sin crawling
 python run.py https://example.com --no-crawl
 
-# Escaneo con exportación a PDF
-python run.py https://example.com --export-pdf
+# Filtrar hallazgos de baja confianza
+python run.py https://example.com --filter-low-confidence
 
 # Ver ayuda completa
 python run.py --help
 ```
 
-📖 **[Ver Guía Rápida Completa](QUICKSTART.md)**
+📖 **[Ver Guía Rápida Completa](QUICKSTART.md)** | **[Instalación Detallada](QUICK_INSTALL.md)**
 
-## ✨ Características Destacadas
-
-### 📊 Reportes HTML Profesionales con Sección de Explotación (v0.8.0)
-- **POCs reales y funcionales** para cada vulnerabilidad detectada
-- **Pasos detallados de explotación** paso a paso
-- **Herramientas recomendadas** para cada tipo de ataque
-- **Impacto potencial** claramente explicado
-- **Comandos listos para usar** (SQLMap, curl, reverse shells, etc.)
-- **Diseño visual distintivo** con código resaltado
-- **Cobertura completa**: XSS, SQLi, CSRF, LFI, SSRF, XXE, CORS, Auth, Headers, Command Injection
-
-📖 **[Ver Documentación de Explotación](docs/EXPLOITATION_SECTION.md)**
+## ✨ Características Principales
 
 ### 🔍 Sistema de Validación Avanzado (v0.5.0)
+Reduce falsos positivos en ~76% mediante:
 - **Comparación de respuestas baseline** con cache inteligente
 - **Scoring de confianza (0-100)** por cada hallazgo
 - **Detección automática de falsos positivos**
-- **Reducción de falsos positivos: ~76%**
 - **Precisión mejorada: 67% → 92%**
 - **Ahorro de tiempo: ~75% en validación manual**
 
-### 🛡️ 10 Módulos de Vulnerabilidad Completos (v0.7.0)
-- ✅ **XSS** (Cross-Site Scripting) - CVSS 6.1-7.1 | 60+ payloads
-- ✅ **SQLi** (SQL Injection) - CVSS 8.6-9.8 | 100+ payloads
-- ✅ **Security Headers** - CVSS 6.5-8.0 | 15+ headers
-- ✅ **CSRF** (Cross-Site Request Forgery) - CVSS 8.8
-- ✅ **CORS** (Misconfiguration) - CVSS 7.5-9.1
-- ✅ **LFI/RFI** (File Inclusion) - CVSS 7.5-9.1 | 40+ payloads
-- ✅ **XXE** (XML External Entity) - CVSS 7.5-9.1 | 6 payloads
-- ✅ **SSRF** (Server-Side Request Forgery) - CVSS 8.6-9.1 | 15+ payloads
-- ✅ **Command Injection** - CVSS 9.8 | 20+ payloads
-- ✅ **Authentication** (Weak Auth) - CVSS 5.3-9.8 | 12 credenciales
+### 🛡️ 10 Módulos de Vulnerabilidad Completos
+Cobertura 100% de OWASP Top 10 2021:
 
-**Total:** 300+ payloads | Cobertura OWASP Top 10 2021: 100%
+| Módulo | Severidad | Payloads | CVSS | Estado |
+|--------|-----------|----------|------|--------|
+| **XSS** (Cross-Site Scripting) | HIGH | 60+ | 6.1-7.1 | ✅ |
+| **SQLi** (SQL Injection) | CRITICAL | 100+ | 8.6-9.8 | ✅ |
+| **Security Headers** | HIGH/MEDIUM | 15+ | 6.5-8.0 | ✅ |
+| **CSRF** (Cross-Site Request Forgery) | HIGH | N/A | 8.8 | ✅ |
+| **CORS** (Misconfiguration) | CRITICAL | N/A | 7.5-9.1 | ✅ |
+| **LFI/RFI** (File Inclusion) | CRITICAL | 40+ | 7.5-9.1 | ✅ |
+| **XXE** (XML External Entity) | CRITICAL | 6 | 7.5-9.1 | ✅ |
+| **SSRF** (Server-Side Request Forgery) | CRITICAL | 15+ | 8.6-9.1 | ✅ |
+| **Command Injection** | CRITICAL | 20+ | 9.8 | ✅ |
+| **Authentication** (Weak Auth) | CRITICAL | 12 | 5.3-9.8 | ✅ |
+
+**Total:** 300+ payloads | **Cobertura OWASP Top 10:** 100%
 
 ### 🔧 Integración con Herramientas Externas
+- ✅ **Nmap** - Port scanning & service detection
 - ✅ **Nuclei** - Template-based scanner (ProjectDiscovery)
 - ✅ **SQLMap** - SQL Injection detection & exploitation
 - ✅ **OWASP ZAP** - Web application security scanner
-- ✅ **Nmap** - Port scanning & service detection (python-nmap)
-- 🚀 Instalación automática con `install_tools.py`
-- 🎯 Ejecución integrada desde `run.py`
+- 🚀 **Instalación automática** con `install_tools.py`
 
 ### 📊 Reportes Profesionales
-- Dashboard interactivo estilo Acunetix/Burp Suite
-- Gráficos Chart.js con distribución de vulnerabilidades
-- Scoring de confianza visible por hallazgo
-- Estadísticas de validación integradas
-- Exportación automática a PDF
+- **Dashboard interactivo** estilo Acunetix/Burp Suite
+- **Gráficos Chart.js** con distribución de vulnerabilidades
+- **Scoring de confianza** visible por hallazgo
+- **Sección de explotación** con POCs reales de GitHub
+- **Exportación automática a PDF** con wkhtmltopdf
+- **Múltiples formatos**: JSON, CSV, YAML, HTML, PDF
 
-## 📋 Tabla de Contenidos
+### ⚡ Optimizaciones de Performance (v0.9.0)
+- **40% menos código duplicado** - Arquitectura refactorizada
+- **30-50% más rápido** - Session pooling y caching inteligente
+- **50% más rápida inicialización** - Carga única de payloads
+- **HTTPClient centralizado** - Session pooling automático
+- **PayloadManager con Singleton** - Gestión eficiente de payloads
 
-- [Características principales](#características-principales)
-- [Sistema de Validación](#sistema-de-validación)
-- [Instalación](#instalación)
-- [Uso y ejemplos](#uso-y-ejemplos)
-- [Módulos de vulnerabilidad](#módulos-de-vulnerabilidad)
-- [Estructura y componentes](#estructura-y-componentes)
-- [Flujo de trabajo](#flujo-de-trabajo)
-- [Integración con herramientas externas](#integración-con-herramientas-externas)
-- [Documentación](#documentación)
-- [Cambios recientes](#cambios-recientes)
-- [Licencia](#licencia)
+📖 **[Ver Documentación Completa de Módulos](docs/ALL_MODULES_SUMMARY.md)**
+
+## �️ Stack Tecnológico
+
+### Lenguaje Principal
+- **Python 3.8+** - Lenguaje de programación principal
+
+### Librerías Core
+| Librería | Versión | Propósito |
+|----------|---------|-----------|
+| **[Requests](https://docs.python-requests.org/)** | 2.31+ | Cliente HTTP para peticiones web |
+| **[BeautifulSoup4](https://www.crummy.com/software/BeautifulSoup/)** | 4.12+ | Parsing y análisis de HTML/XML |
+| **[Jinja2](https://jinja.palletsprojects.com/)** | 3.1+ | Motor de templates para reportes |
+| **[colorlog](https://github.com/borntyping/python-colorlog)** | 6.7+ | Logging con colores |
+
+### Librerías Opcionales
+| Librería | Versión | Propósito |
+|----------|---------|-----------|
+| **[Playwright](https://playwright.dev/python/)** | 1.40+ | Crawling dinámico con JavaScript |
+| **[PyYAML](https://pyyaml.org/)** | 6.0+ | Exportación en formato YAML |
+| **[python-nmap](https://pypi.org/project/python-nmap/)** | 0.7+ | Integración con Nmap |
+
+### Herramientas Externas Integradas
+| Herramienta | Versión | Propósito |
+|-------------|---------|-----------|
+| **[Nmap](https://nmap.org/)** | 7.80+ | Port scanning y detección de servicios |
+| **[Nuclei](https://github.com/projectdiscovery/nuclei)** | 3.0+ | Template-based vulnerability scanner |
+| **[SQLMap](https://sqlmap.org/)** | 1.7+ | SQL injection detection & exploitation |
+| **[OWASP ZAP](https://www.zaproxy.org/)** | 2.14+ | Web application security scanner |
+| **[wkhtmltopdf](https://wkhtmltopdf.org/)** | 0.12+ | Conversión HTML a PDF |
+
+### Frontend (Reportes)
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **HTML5** | - | Estructura de reportes |
+| **CSS3** | - | Estilos y diseño responsive |
+| **JavaScript (ES6+)** | - | Interactividad en reportes |
+| **[Chart.js](https://www.chartjs.org/)** | 4.4+ | Gráficos interactivos |
+
+### Servidor Web
+| Tecnología | Versión | Propósito |
+|------------|---------|-----------|
+| **[Flask](https://flask.palletsprojects.com/)** | 3.0+ | Servidor web para visualización |
+
+### Patrones de Diseño
+- **Strategy Pattern** - Validadores específicos por vulnerabilidad
+- **Singleton Pattern** - PayloadManager para carga única
+- **Template Method** - EnhancedVulnerabilityModule
+- **Factory Pattern** - Creación de runners externos
+- **Observer Pattern** - Sistema de logging
+
+### Arquitectura
+- **Modular** - Componentes independientes y reutilizables
+- **Extensible** - Fácil añadir nuevos módulos
+- **Concurrente** - Ejecución paralela de módulos
+- **Event-driven** - Sistema de logging y notificaciones
+
+### Estándares y Compliance
+- **OWASP Top 10 2021** - Cobertura completa
+- **CWE** - Common Weakness Enumeration
+- **CVSS v3.1** - Scoring de vulnerabilidades
+- **PEP 8** - Estilo de código Python
+
+---
+
+## �📋 Tabla de Contenidos
+
+- [¿Por Qué WebSec Framework?](#-por-qué-websec-framework)
+- [Características Principales](#-características-principales)
+- [Instalación](#-instalación)
+- [Uso y Ejemplos](#-uso-y-ejemplos)
+- [Módulos de Vulnerabilidad](#-módulos-de-vulnerabilidad)
+- [Sistema de Validación](#-sistema-de-validación)
+- [Integración con Herramientas Externas](#-integración-con-herramientas-externas)
+- [Arquitectura y Componentes](#-arquitectura-y-componentes)
+- [Documentación](#-documentación)
+- [Contribuciones](#-contribuciones)
+- [Roadmap](#-roadmap)
+- [Licencia](#-licencia)
+- [Agradecimientos](#-agradecimientos)
+
+---
 
 ## Sistema de Validación
 
@@ -142,23 +252,32 @@ python run.py https://example.com --no-validation
 
 📖 **[Documentación Completa del Sistema de Validación](docs/VALIDATION_SYSTEM.md)**
 
-## Instalación
+## 📦 Instalación
+
+### Requisitos Previos
+- **Python 3.8+**
+- **pip** (gestor de paquetes de Python)
+- **Git** (opcional, para clonar el repositorio)
 
 ### Instalación Básica
 
 ```bash
-# 1. Clonar repositorio
-git clone <repo-url>
+# 1. Clonar el repositorio
+git clone https://github.com/tu-usuario/websec-framework.git
 cd websec-framework
 
-# 2. Instalar dependencias principales
+# 2. Crear entorno virtual (recomendado)
+python -m venv .venv
+source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+
+# 3. Instalar dependencias principales
 pip install -r requirements.txt
 
-# 3. (Opcional) Para crawling JS dinámico
+# 4. (Opcional) Para crawling JS dinámico
 pip install playwright
 python -m playwright install chromium
 
-# 4. (Opcional) Para exportar en YAML
+# 5. (Opcional) Para exportar en YAML
 pip install pyyaml
 ```
 
@@ -172,6 +291,12 @@ python install_tools.py
 
 **Opción 2: Instalación Manual**
 ```bash
+# Nmap
+# Windows: Descargar desde https://nmap.org/download.html
+# Linux: sudo apt-get install nmap
+# macOS: brew install nmap
+pip install python-nmap
+
 # SQLMap
 git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git tools/sqlmap
 
@@ -179,11 +304,29 @@ git clone --depth 1 https://github.com/sqlmapproject/sqlmap.git tools/sqlmap
 # Nuclei - Descargar desde https://github.com/projectdiscovery/nuclei/releases
 ```
 
+### Instalación para Exportación PDF
+
+```bash
+# Windows: Descargar wkhtmltopdf desde https://wkhtmltopdf.org/downloads.html
+# Linux: sudo apt-get install wkhtmltopdf
+# macOS: brew install wkhtmltopdf
+```
+
+### Verificación de Instalación
+
+```bash
+# Verificar instalación básica
+python run.py --help
+
+# Verificar herramientas externas
+python tests/test_external_tools.py
+```
+
 📖 **[Guía Completa de Instalación](INSTALL_TOOLS_WINDOWS.md)** | **[Instalación Rápida](QUICK_INSTALL.md)**
 
-**Nota:** Los binarios de Nuclei, sqlmap y ZAP deben descargarse manualmente y ubicarse en `tools/` o estar en el PATH del sistema.
+---
 
-## Uso y ejemplos
+## 💻 Uso y Ejemplos
 
 ### Uso Básico
 
@@ -194,8 +337,14 @@ python run.py https://example.com
 # Escaneo con exportación a PDF
 python run.py https://example.com --export-pdf
 
+# Escaneo rápido sin crawling (solo vulnerabilidades)
+python run.py https://example.com --no-crawl
+
 # Filtrar hallazgos de baja confianza
 python run.py https://example.com --filter-low-confidence
+
+# Deshabilitar validación (no recomendado)
+python run.py https://example.com --no-validation
 
 # Ver ayuda completa
 python run.py --help
@@ -203,390 +352,7 @@ python run.py --help
 
 ### Escaneo con Herramientas Externas
 
-#### Nuclei
-```bash
-# Escaneo básico
-python run.py https://example.com --nuclei
-
-# Filtrar por severidad
-python run.py https://example.com --nuclei --nuclei-severity high,critical
-
-# Escaneo masivo
-python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
-```
-
-#### SQLMap
-```bash
-# Escaneo básico
-python run.py https://example.com/page.php?id=1 --sqlmap
-
-# Configuración avanzada
-python run.py https://example.com/page.php?id=1 --sqlmap \
-    --sqlmap-risk 2 --sqlmap-level 2
-
-# Con POST data
-python run.py https://example.com/login --sqlmap \
-    --sqlmap-data "user=admin&pass=test"
-```
-
-#### OWASP ZAP
-```bash
-# Escaneo rápido
-python run.py https://example.com --zap --zap-mode quick
-
-# Escaneo completo
-python run.py https://example.com --zap --zap-mode full \
-    --zap-spider --zap-ajax-spider
-```
-
-#### Escaneo Combinado
-```bash
-# Todas las herramientas
-python run.py https://example.com --nuclei --sqlmap --zap
-```
-
-### Uso Programático
-
-```python
-from core.scanner import Scanner
-from modules.headers import HeadersModule
-
-# Crear scanner
-scanner = Scanner("https://example.com", {})
-
-# Registrar módulos
-scanner.register_module(HeadersModule(scanner.config))
-
-# Ejecutar escaneo
-scanner.run()
-
-# Obtener resultados
-findings = scanner.all_findings
-```
-
-### Estructura de Reportes
-
-Los resultados se guardan en `reports/scan_TIMESTAMP/`:
-- `crawl_urls.json` - URLs descubiertas
-- `crawl_forms.json` - Formularios encontrados
-- `crawl_js_endpoints.json` - Endpoints JS
-- `crawl_tree.json` - Árbol de navegación
-- `fingerprint.json` - Información tecnológica
-- `headers_findings.json` - Hallazgos de security headers
-- `xss_findings.json` - Hallazgos de XSS
-- `sqli_findings.json` - Hallazgos de SQLi
-- `vulnerability_scan_consolidated.json` - Reporte consolidado
-- `vulnerability_report.html` - Reporte HTML profesional
-- `vulnerability_report.pdf` - Reporte PDF (con --export-pdf)
-
-### Reportes HTML Profesionales
-
-El framework genera reportes HTML profesionales estilo Acunetix/Burp Suite con:
-
-- **Dashboard interactivo**: Score de riesgo (0-100), cards de severidad
-- **Gráficos Chart.js**: Distribución por severidad y tipo
-- **Tabla filtrable**: Vulnerabilidades con detalles expandibles
-- **Timeline**: Cronología del escaneo
-- **Exportación múltiple**: Print/PDF, JSON, Copy summary
-- **Diseño responsive**: Gradientes purple, navegación por tabs
-
-**Exportación a PDF:**
-```bash
-# Exportar automáticamente a PDF
-python run.py https://example.com --export-pdf
-```
-
-El PDF incluye TODO el contenido del reporte (no solo la pestaña activa), con colores y gráficos preservados.
-
-**Requisitos para PDF:**
-- Windows: Descarga wkhtmltopdf desde https://wkhtmltopdf.org/downloads.html
-- Linux: `sudo apt-get install wkhtmltopdf`
-- macOS: `brew install wkhtmltopdf`
-- O copia `wkhtmltopdf.exe` a `tools/wkhtmltopdf/`
-
-### Visualización Interactiva
-
-Para visualizar el árbol de crawling:
-1. Ejecuta el crawling normalmente
-2. Inicia el servidor Flask: `python app.py`
-3. Abre http://localhost:5000/crawl_tree en tu navegador
-4. El árbol se muestra con nodos expandibles, tooltips y estética moderna
-## Visualización interactiva del árbol de crawling
-
-El archivo `templates/crawl_tree.html` permite visualizar el mapa del sitio descubierto de forma interactiva y profesional:
-- Nodos expandibles/colapsables.
-- Tooltips para URLs largas.
-- Ctrl+Click para abrir URLs.
-- Estética moderna (degradados, sombra, responsive).
-- Automatización vía Flask.
-
-Para usarlo:
-1. Ejecuta el crawling.
-2. Inicia el servidor Flask.
-3. Accede a la página de visualización.
-
-## Payloads y plantillas
-
-- Los payloads para XSS, SQLi, LFI, etc. están en la carpeta `payloads/` y pueden ser editados o ampliados.
-- Las plantillas HTML para reportes están en `templates/` y pueden personalizarse con Jinja2.
-
-## Documentación
-
-### Documentación Principal
-- **[README.md](README.md)** - Este archivo, documentación general del framework
-- **[QUICKSTART.md](QUICKSTART.md)** - Guía rápida de inicio
-- **[docs/HEADERS_MODULE.md](docs/HEADERS_MODULE.md)** - Documentación completa del módulo Security Headers
-- **[docs/DEPENDENCIAS.md](docs/DEPENDENCIAS.md)** - Dependencias técnicas y recomendaciones
-- **[docs/PLAN_DESARROLLO.md](docs/PLAN_DESARROLLO.md)** - Hoja de ruta y buenas prácticas de desarrollo
-
-### Ayuda en Línea
-```bash
-python run.py --help
-```
-
-### Ejemplos de Código
-- **[tests/example_usage.py](tests/example_usage.py)** - Ejemplo de uso integrado del framework
-- **[tests/test_headers.py](tests/test_headers.py)** - Script de prueba del módulo Security Headers
-
-## Herramientas externas utilizadas
-
-- [Nuclei](https://github.com/projectdiscovery/nuclei) (ProjectDiscovery)
-- [OWASP ZAP](https://www.zaproxy.org/)
-- [sqlmap](https://sqlmap.org/)
-- [Nmap](https://nmap.org/) con [python-nmap](https://pypi.org/project/python-nmap/)
-- [Playwright](https://playwright.dev/python/) (para crawling JS)
-- [PyYAML](https://pyyaml.org/) (opcional para exportar YAML)
-- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)
-- [Requests](https://docs.python-requests.org/)
-- [Jinja2](https://jinja.palletsprojects.com/)
-- [colorlog](https://github.com/borntyping/python-colorlog)
-
-Estas herramientas están integradas pero no desarrolladas por este proyecto. Consulta sus licencias y documentación oficial para más detalles.
-## Módulos de vulnerabilidad
-
-Cada módulo es autocontenible y puede activarse/desactivarse vía configuración. El framework incluye **10 módulos completos** con cobertura del 100% de OWASP Top 10 2021.
-
-### ✅ Módulos Implementados (10/10)
-
-#### **1. XSS - Cross-Site Scripting** (COMPLETO) ⭐⭐⭐
-Detección de vulnerabilidades XSS: Reflected, Stored y DOM-based.
-
-**Características:**
-- Detección de Reflected XSS en parámetros GET/POST y formularios
-- Análisis de DOM XSS mediante inspección de JavaScript
-- 60+ payloads de prueba (básicos, avanzados, bypass)
-- Detección de contextos de inyección (HTML, atributos, JavaScript)
-- Identificación de funciones JavaScript peligrosas (eval, innerHTML, document.write)
-
-**CVSS: 7.1 (Reflected), 6.1 (DOM-based) | CWE-79 | OWASP A03:2021**
-
-**Salida:** `xss_findings.json`
-
----
-
-#### **2. SQLi - SQL Injection** (COMPLETO) ⭐⭐⭐
-Detección de SQL Injection con soporte para integración con SQLMap.
-
-**Características:**
-- Detección Error-based: Identifica mensajes de error SQL
-- Detección Boolean-based: Análisis de respuestas diferenciales
-- 100+ payloads organizados por tipo y DBMS
-- Soporte para MySQL, PostgreSQL, MSSQL, Oracle, SQLite
-- Integración opcional con SQLMap para explotación avanzada
-
-**CVSS: 9.8 (Error-based), 8.6 (Boolean-based) | CWE-89 | OWASP A03:2021**
-
-**Salida:** `sqli_findings.json`
-
----
-
-#### **3. Security Headers** (COMPLETO) ⭐⭐⭐
-Análisis profesional de headers de seguridad HTTP según estándares OWASP.
-
-**Características:**
-- Detecta headers faltantes: HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy
-- Valida configuraciones inseguras: CSP con unsafe-inline/unsafe-eval, HSTS débil
-- Detecta information disclosure: Server, X-Powered-By, X-AspNet-Version
-- Identifica CORS permisivo y headers redundantes
-- CVSS scoring automático por hallazgo
-
-**CVSS: 6.5-8.0 (Variable) | CWE-693, CWE-1021 | OWASP A05:2021**
-
-**Salida:** `headers_findings.json`
-
-**Documentación:** [docs/HEADERS_MODULE.md](docs/HEADERS_MODULE.md)
-
----
-
-#### **4. CSRF - Cross-Site Request Forgery** (COMPLETO) ⭐⭐⭐
-Detecta vulnerabilidades de falsificación de peticiones entre sitios.
-
-**Características:**
-- Análisis de tokens CSRF en formularios POST
-- Validación de atributo SameSite en cookies
-- Verificación de headers Origin/Referer
-- Detección de endpoints sin protección CSRF
-- Identificación de configuraciones inseguras (SameSite=None sin Secure)
-
-**CVSS: 8.8 (High) | CWE-352 | OWASP A01:2021**
-
-**Salida:** `csrf_findings.json`
-
----
-
-#### **5. CORS - Cross-Origin Resource Sharing** (COMPLETO) ⭐⭐⭐
-Análisis profundo de configuraciones CORS.
-
-**Características:**
-- Detección de Access-Control-Allow-Origin: * (wildcard)
-- Validación de credentials con wildcard (CRÍTICO)
-- Análisis de métodos permitidos peligrosos (PUT, DELETE, PATCH)
-- Detección de null origin acceptance
-- Verificación de reflexión de origin arbitrario
-
-**CVSS: 7.5 (High), 9.1 (Critical con credentials) | CWE-942 | OWASP A05:2021**
-
-**Salida:** `cors_findings.json`
-
----
-
-#### **6. LFI/RFI - Local/Remote File Inclusion** (COMPLETO) ⭐⭐⭐
-Detecta vulnerabilidades de inclusión de archivos locales y remotos.
-
-**Características:**
-- Detección de path traversal (../, ../../, ..\\)
-- 40+ payloads para /etc/passwd, win.ini, logs
-- Detección de RFI con URLs externas
-- Análisis de parámetros susceptibles (file, path, page, include)
-- Técnicas de bypass: encoding, double slashes, null byte
-- PHP wrappers: php://filter, data://, expect://
-
-**CVSS: 7.5 (LFI), 9.1 (RFI) | CWE-98, CWE-22 | OWASP A03:2021**
-
-**Salida:** `lfi_findings.json`
-
-**Documentación:** [docs/CSRF_CORS_LFI_MODULES.md](docs/CSRF_CORS_LFI_MODULES.md)
-
----
-
-#### **7. XXE - XML External Entity** (COMPLETO) ⭐⭐⭐ 🆕
-Detecta vulnerabilidades XXE que permiten lectura de archivos locales o SSRF.
-
-**Características:**
-- 6 payloads XXE: lectura de archivos, SSRF, PHP wrappers, expect RCE
-- Descubrimiento automático de endpoints que aceptan XML
-- Detección de evidencia: /etc/passwd, win.ini, errores XML, respuestas localhost
-- Soporte para Linux y Windows
-- Verificación de aceptación de XML antes de probar
-
-**CVSS: 9.1 (Critical), 7.5 (High) | CWE-611 | OWASP A05:2021**
-
-**Salida:** `xxe_findings.json`
-
-**Documentación:** [docs/XXE_MODULE.md](docs/XXE_MODULE.md)
-
----
-
-#### **8. SSRF - Server-Side Request Forgery** (COMPLETO) ⭐⭐⭐ 🆕
-Detecta vulnerabilidades SSRF que permiten realizar peticiones desde el servidor.
-
-**Características:**
-- 15+ payloads: localhost, 127.0.0.1, AWS/GCP metadata, redes privadas
-- Técnicas de bypass: octal, decimal, hex, @, #
-- Descubrimiento de parámetros susceptibles (url, uri, link, src, dest, redirect, proxy, api, callback, webhook)
-- Análisis diferencial de respuestas (longitud, tiempo)
-- Detección de acceso a metadata endpoints (AWS, GCP)
-
-**CVSS: 9.1 (Critical - metadata), 8.6 (High - interno) | CWE-918 | OWASP A10:2021**
-
-**Salida:** `ssrf_findings.json`
-
----
-
-#### **9. Command Injection - OS Command Injection** (COMPLETO) ⭐⭐⭐ 🆕
-Detecta vulnerabilidades de Command Injection que permiten ejecutar comandos del sistema operativo.
-
-**Características:**
-- 20+ payloads para Linux/Unix y Windows
-- Operadores de concatenación: ;, |, &, &&, ||, `, $()
-- Comandos: id, whoami, uname, cat, dir
-- Time-based detection: sleep, timeout, ping
-- Detección de evidencia: uid, gid, root, Directory of
-- Parámetros susceptibles: cmd, command, exec, execute, run, ping, host, ip, file, path
-
-**CVSS: 9.8 (Critical) | CWE-78 | OWASP A03:2021**
-
-**Salida:** `cmdi_findings.json`
-
----
-
-#### **10. Authentication - Autenticación Débil** (COMPLETO) ⭐⭐⭐ 🆕
-Detecta problemas de autenticación, credenciales por defecto y configuraciones inseguras.
-
-**Características:**
-- Detección de HTTP Basic/Digest Authentication
-- 12 credenciales por defecto: admin/admin, root/root, etc.
-- Descubrimiento automático de formularios de login
-- Prueba de credenciales por defecto en formularios
-- Verificación de protecciones contra fuerza bruta (rate limiting, CAPTCHA)
-- Detección de transporte inseguro (HTTP vs HTTPS)
-- Análisis de cookies de sesión
-
-**CVSS: 9.8 (credenciales), 7.5 (HTTP), 5.3 (brute force) | CWE-798, CWE-319, CWE-307 | OWASP A07:2021**
-
-**Salida:** `auth_findings.json`
-
----
-
-### 📊 Resumen de Módulos
-
-| # | Módulo | Payloads | Severidad | OWASP 2021 | Estado |
-|---|--------|----------|-----------|------------|--------|
-| 1 | XSS | 60+ | HIGH | A03 | ✅ |
-| 2 | SQLi | 100+ | CRITICAL | A03 | ✅ |
-| 3 | Headers | 15+ | HIGH/MEDIUM | A05 | ✅ |
-| 4 | CSRF | N/A | HIGH | A01 | ✅ |
-| 5 | CORS | N/A | CRITICAL | A05 | ✅ |
-| 6 | LFI/RFI | 40+ | CRITICAL | A03 | ✅ |
-| 7 | XXE | 6 | CRITICAL | A05 | ✅ 🆕 |
-| 8 | SSRF | 15+ | CRITICAL | A10 | ✅ 🆕 |
-| 9 | CMDI | 20+ | CRITICAL | A03 | ✅ 🆕 |
-| 10 | Auth | 12 | CRITICAL | A07 | ✅ 🆕 |
-
-**Total:** 300+ payloads | **Cobertura OWASP Top 10:** 100%
-
-**Documentación completa:** [docs/ALL_MODULES_SUMMARY.md](docs/ALL_MODULES_SUMMARY.md)
-- Detección de DBMS específico
-
-**Salida:**
-- `sqli_findings.json`: Hallazgos con payload, tipo y evidencia
-- CVSS: 9.8 (Error-based), 8.6 (Boolean-based)
-- CWE-89, OWASP A03:2021
-
-**Integración SQLMap:**
-```python
-config = {
-    "use_sqlmap": True,  # Habilitar SQLMap
-    "target_url": "https://example.com"
-}
-```
-
-### 🚧 Módulos en Desarrollo
-
-- **Auth**: Autenticación débil o básica (próximamente)
-- **XXE**: XML External Entity (próximamente)
-- **SSRF**: Server-Side Request Forgery (próximamente)
-- **Command Injection**: OS Command Injection (próximamente)
-
-Cada módulo implementa la interfaz `VulnerabilityModule` con métodos `scan()` y `get_results()`, y puede usar payloads personalizados.
-
-## Integración con herramientas externas
-
-El framework integra y orquesta herramientas líderes de seguridad:
-
-### Nmap - Port Scanning & Service Detection
-Escaneo de puertos, detección de servicios y fingerprinting de OS.
-
+#### Nmap - Port Scanning
 ```bash
 # Escaneo rápido de puertos comunes
 python run.py https://example.com --nmap
@@ -594,24 +360,16 @@ python run.py https://example.com --nmap
 # Escaneo completo de todos los puertos
 python run.py https://example.com --nmap --nmap-scan-type full
 
-# Escaneo de servicios
+# Escaneo de servicios y versiones
 python run.py https://example.com --nmap --nmap-scan-type service
-
-# Escaneo de vulnerabilidades
-python run.py https://example.com --nmap --nmap-scan-type vuln
-
-# Puertos personalizados
-python run.py https://example.com --nmap --nmap-ports "80,443,8080"
 
 # Con detección de OS (requiere privilegios)
 python run.py https://example.com --nmap --nmap-detect-os
 ```
 
-### Nuclei - Template-based Scanner
-Escaneo rápido basado en templates para detectar vulnerabilidades conocidas.
-
+#### Nuclei - Template-based Scanner
 ```bash
-# Escaneo básico con Nuclei
+# Escaneo básico
 python run.py https://example.com --nuclei
 
 # Filtrar por severidad
@@ -624,16 +382,14 @@ python run.py https://example.com --nuclei --nuclei-tags xss,sqli
 python run.py --nuclei-url-list urls.txt --nuclei --nuclei-threads 10
 ```
 
-### SQLMap - SQL Injection Scanner
-Detección y explotación avanzada de SQL Injection.
-
+#### SQLMap - SQL Injection
 ```bash
-# Escaneo básico con SQLMap
+# Escaneo básico
 python run.py https://example.com/page.php?id=1 --sqlmap
 
 # Configuración avanzada
 python run.py https://example.com/page.php?id=1 --sqlmap \
-    --sqlmap-risk 2 --sqlmap-level 2 --sqlmap-threads 2
+    --sqlmap-risk 2 --sqlmap-level 2
 
 # Con POST data
 python run.py https://example.com/login --sqlmap \
@@ -644,11 +400,9 @@ python run.py https://example.com/page.php?id=1 --sqlmap \
     --sqlmap-tamper "space2comment,between"
 ```
 
-### OWASP ZAP - Web Application Scanner
-Escaneo automatizado de vulnerabilidades web.
-
+#### OWASP ZAP - Web Application Scanner
 ```bash
-# Escaneo rápido con ZAP
+# Escaneo rápido
 python run.py https://example.com --zap --zap-mode quick
 
 # Escaneo completo con spider
@@ -659,11 +413,9 @@ python run.py https://example.com --zap --zap-mode full \
 python run.py https://api.example.com --zap --zap-mode api
 ```
 
-### Escaneo Combinado
-Ejecuta múltiples herramientas en un solo comando:
-
+#### Escaneo Combinado
 ```bash
-# Escaneo completo con todas las herramientas
+# Todas las herramientas
 python run.py https://example.com --nmap --nuclei --sqlmap --zap
 
 # Con configuración personalizada
@@ -671,326 +423,378 @@ python run.py https://example.com \
     --nmap --nmap-scan-type quick \
     --nuclei --nuclei-severity high,critical \
     --sqlmap --sqlmap-risk 2 \
-    --zap --zap-mode baseline
+    --zap --zap-mode baseline \
+    --export-pdf
 ```
 
-### Instalación de Herramientas
+### Uso Programático
 
-**Instalación automática (recomendado):**
+```python
+from core.scanner import Scanner
+from modules.xss import XSSModule
+from modules.sqli import SQLiModule
+from modules.headers import HeadersModule
+
+# Configuración
+config = {
+    "target_url": "https://example.com",
+    "enable_validation": True,
+    "filter_low_confidence": False,
+    "export_pdf": True
+}
+
+# Crear scanner
+scanner = Scanner("https://example.com", config)
+
+# Registrar módulos
+scanner.register_module(XSSModule(config))
+scanner.register_module(SQLiModule(config))
+scanner.register_module(HeadersModule(config))
+
+# Ejecutar escaneo
+scanner.run()
+
+# Obtener resultados
+findings = scanner.all_findings
+for finding in findings:
+    print(f"{finding['severity'].upper()}: {finding['title']}")
+```
+
+### Estructura de Reportes
+
+Los resultados se guardan en `reports/scan_TIMESTAMP/`:
+
+```
+reports/scan_20260424_143022/
+├── crawl_urls.json                      # URLs descubiertas
+├── crawl_urls.csv                       # URLs en CSV
+├── crawl_urls.yaml                      # URLs en YAML
+├── crawl_forms.json                     # Formularios encontrados
+├── crawl_js_endpoints.json              # Endpoints JS
+├── crawl_tree.json                      # Árbol de navegación
+├── fingerprint.json                     # Información tecnológica
+├── headers_findings.json                # Hallazgos de security headers
+├── xss_findings.json                    # Hallazgos de XSS
+├── sqli_findings.json                   # Hallazgos de SQLi
+├── csrf_findings.json                   # Hallazgos de CSRF
+├── cors_findings.json                   # Hallazgos de CORS
+├── lfi_findings.json                    # Hallazgos de LFI/RFI
+├── xxe_findings.json                    # Hallazgos de XXE
+├── ssrf_findings.json                   # Hallazgos de SSRF
+├── cmdi_findings.json                   # Hallazgos de Command Injection
+├── auth_findings.json                   # Hallazgos de Authentication
+├── vulnerability_scan_consolidated.json # ⭐ Reporte consolidado JSON
+├── vulnerability_report.html            # ⭐ Reporte HTML profesional
+└── vulnerability_report.pdf             # ⭐ Reporte PDF (con --export-pdf)
+```
+
+### Visualización Interactiva
+
 ```bash
-python install_tools.py
+# Iniciar servidor Flask
+python app.py
+
+# Abrir en navegador
+# http://localhost:5000/
+
+# Visualizar árbol de crawling
+# http://localhost:5000/crawl_tree/scan_TIMESTAMP
+
+# Ver reporte HTML
+# http://localhost:5000/reports/scan_TIMESTAMP/vulnerability_report.html
 ```
-
-**Instalación manual:**
-- **Nmap**: https://nmap.org/download.html + `pip install python-nmap`
-- **Nuclei**: https://github.com/projectdiscovery/nuclei/releases
-- **SQLMap**: https://github.com/sqlmapproject/sqlmap
-- **OWASP ZAP**: https://www.zaproxy.org/download/
-
-📖 **[Guía Completa de Instalación](INSTALL_TOOLS_WINDOWS.md)** | **[Documentación de Integraciones](docs/EXTERNAL_INTEGRATIONS.md)** | **[Documentación de Nmap](docs/NMAP_INTEGRATION.md)**
-
-## Configuración y personalización
-
-- Edita `config/target.yaml` para definir el objetivo, cabeceras, cookies y parámetros de crawling.
-- Puedes crear múltiples archivos YAML para distintos objetivos.
-- Los módulos y payloads pueden activarse/desactivarse y personalizarse fácilmente.
-
-# WebSec Framework (Mini Acunetix)
-
-WebSec Framework es una plataforma profesional y extensible para el análisis de seguridad web, inspirada en Acunetix, que automatiza el descubrimiento de vulnerabilidades, el fingerprinting tecnológico y la generación de reportes avanzados. Está diseñada para ser modular, fácil de extender y compatible con herramientas líderes del sector.
 
 ---
 
-## Tabla de contenidos
-- [Características principales](#características-principales)
-- [Estructura y componentes](#estructura-y-componentes)
-- [Flujo de trabajo](#flujo-de-trabajo)
+## 📚 Documentación
+
+### Documentación Principal
+- **[README.md](README.md)** - Este archivo, documentación general
+- **[QUICKSTART.md](QUICKSTART.md)** - Guía rápida de inicio
+- **[QUICK_INSTALL.md](QUICK_INSTALL.md)** - Instalación rápida en 5 minutos
+- **[CHANGELOG.md](CHANGELOG.md)** - Historial de cambios y versiones
+
+### Documentación Técnica
+- **[docs/ALL_MODULES_SUMMARY.md](docs/ALL_MODULES_SUMMARY.md)** - Resumen completo de módulos
+- **[docs/OPTIMIZATION_SUMMARY.md](docs/OPTIMIZATION_SUMMARY.md)** - Optimizaciones de performance
+- **[docs/REFACTORING_GUIDE.md](docs/REFACTORING_GUIDE.md)** - Guía de refactorización
+- **[docs/VALIDATION_SYSTEM.md](docs/VALIDATION_SYSTEM.md)** - Sistema de validación
+- **[docs/EXTERNAL_INTEGRATIONS.md](docs/EXTERNAL_INTEGRATIONS.md)** - Integraciones externas
+- **[docs/EXPLOITATION_SECTION.md](docs/EXPLOITATION_SECTION.md)** - Sección de explotación
+- **[docs/NMAP_INTEGRATION.md](docs/NMAP_INTEGRATION.md)** - Integración con Nmap
+
+### Ejemplos de Código
+- **[examples/http_client_example.py](examples/http_client_example.py)** - Uso del HTTPClient
+- **[examples/payload_manager_example.py](examples/payload_manager_example.py)** - Uso del PayloadManager
+- **[examples/optimized_module_example.py](examples/optimized_module_example.py)** - Módulo optimizado
+
+### Ayuda en Línea
+```bash
+python run.py --help
+```
 
 ---
 
-## Características principales
-- Crawling inteligente de URLs, formularios y recursos (robots.txt, sitemap.xml, manifest.json, service workers)
-- Soporte para crawling dinámico con Playwright (JS)
-- Fingerprinting tecnológico: servidor, frameworks, cookies, WAF
-- Detección de vulnerabilidades comunes: XSS, SQLi, LFI, CSRF, CORS, Headers, Auth
-- Validación de falsos positivos
-- Integración con Nuclei, sqlmap y OWASP ZAP
-- Exportación de resultados en JSON, CSV, YAML y HTML profesional
-- Plantillas de reporte personalizables (Jinja2)
-- Logging centralizado y colorido
-- Modularidad total: fácil de extender con nuevos módulos y payloads
+## 🤝 Contribuciones
 
-## Estructura y componentes
+¡Las contribuciones son bienvenidas! Este proyecto está abierto a mejoras, correcciones de bugs, nuevos módulos y documentación.
 
-```
-requirements.txt         # Dependencias Python
-run.py                  # Script principal de ejecución
-config/                 # Configuración de objetivos (YAML)
-core/                   # Lógica principal y orquestación
-	├─ base_module.py     # Interfaz base para módulos
-	├─ crawler.py         # Crawling inteligente
-	├─ fingerprint.py     # Fingerprinting tecnológico
-	├─ scanner.py         # Orquestador de módulos
-	├─ validator.py       # Validación de falsos positivos
-	├─ reporter.py        # Generación de reportes
-	├─ logger.py          # Logger centralizado
-	└─ external/          # Integración con Nuclei, sqlmap, ZAP
-modules/                # Módulos de vulnerabilidad (XSS, SQLi, LFI, etc.)
-payloads/               # Payloads para pruebas de inyección
-reports/                # Resultados y reportes generados
-templates/              # Plantillas HTML para reportes y visualización interactiva
+### Cómo Contribuir
 
-tools/                  # Binarios y recursos externos (Nuclei, sqlmap, ZAP, etc.)
-docs/                   # Documentación técnica y plan de desarrollo
-```
+1. **Fork el repositorio**
+   ```bash
+   git clone https://github.com/tu-usuario/websec-framework.git
+   cd websec-framework
+   ```
 
-### Descripción de carpetas clave
-- **core/**: Motor del framework. Incluye crawling, fingerprinting, orquestación de módulos, validación y reportería.
-- **modules/**: Cada archivo implementa un módulo de detección de vulnerabilidad (XSS, SQLi, LFI, CSRF, CORS, Headers, Auth). Todos heredan de una interfaz base.
-- **core/external/**: Integración robusta con Nuclei, sqlmap y ZAP (ejecución, parseo de resultados, manejo de errores).
-- **payloads/**: Listas de payloads para pruebas automáticas (XSS, SQLi, LFI, etc.).
-- **templates/**: Plantillas Jinja2 para reportes HTML profesionales.
-- **config/**: Archivos YAML para definir objetivos, cabeceras, cookies y parámetros de escaneo.
-- **tools/**: Binarios y recursos de herramientas externas (no incluidos, deben descargarse manualmente).
-- **docs/**: Documentación técnica, dependencias y plan de desarrollo.
+2. **Crea una rama para tu feature**
+   ```bash
+   git checkout -b feature/nueva-funcionalidad
+   ```
 
-## Flujo de trabajo
+3. **Realiza tus cambios**
+   - Sigue las convenciones de código del proyecto
+   - Añade tests si es posible
+   - Actualiza la documentación
 
-1. **Configuración**: Define el objetivo y parámetros en `config/target.yaml`.
-2. **Crawling**: Descubre URLs, formularios y recursos usando crawling inteligente (con o sin JS).
-3. **Fingerprinting**: Identifica tecnologías, frameworks, cookies y posibles WAF.
-4. **Escaneo de vulnerabilidades**: Cada módulo analiza el objetivo para su vulnerabilidad específica.
-5. **Validación**: Se filtran falsos positivos mediante heurísticas y comparación de respuestas.
-6. **Reporte**: Se genera un reporte profesional en HTML, JSON, CSV y YAML.
+4. **Commit tus cambios**
+   ```bash
+   git commit -m "feat: añadir nueva funcionalidad X"
+   ```
 
-## Instalación
+5. **Push a tu fork**
+   ```bash
+   git push origin feature/nueva-funcionalidad
+   ```
 
-1. Clona el repositorio y entra al directorio del proyecto.
-2. Instala las dependencias de Python:
+6. **Abre un Pull Request**
+   - Describe claramente los cambios realizados
+   - Referencia issues relacionados si existen
+   - Espera el review del equipo
 
-```bash
-pip install -r requirements.txt
-```
+### Convenciones de Código
 
-3. (Opcional) Para crawling JS, instala Playwright y Chromium:
+- **Python**: Seguir PEP 8
+- **Docstrings**: Usar formato Google/NumPy
+- **Commits**: Usar [Conventional Commits](https://www.conventionalcommits.org/)
+  - `feat:` - Nueva funcionalidad
+  - `fix:` - Corrección de bug
+  - `docs:` - Cambios en documentación
+  - `refactor:` - Refactorización de código
+  - `test:` - Añadir o modificar tests
+  - `chore:` - Tareas de mantenimiento
 
-```bash
-pip install playwright
-python -m playwright install chromium
-```
+### Áreas de Contribución
 
-4. (Opcional) Instala PyYAML para exportar en YAML:
+#### 🐛 Reportar Bugs
+- Usa el [issue tracker](https://github.com/tu-usuario/websec-framework/issues)
+- Describe el problema claramente
+- Incluye pasos para reproducir
+- Adjunta logs si es posible
 
-```bash
-pip install pyyaml
-```
+#### ✨ Proponer Features
+- Abre un issue con la etiqueta `enhancement`
+- Describe el caso de uso
+- Explica el beneficio esperado
 
-## Uso
+#### 📝 Mejorar Documentación
+- Corregir typos
+- Añadir ejemplos
+- Traducir documentación
+- Mejorar claridad
 
-Ejecuta el framework con:
+#### 🔧 Desarrollar Nuevos Módulos
+Sigue la estructura de módulos existentes:
 
-```bash
-python run.py
-```
+```python
+from core.enhanced_base_module import EnhancedVulnerabilityModule
 
-Configura el objetivo y parámetros en `config/target.yaml`.
-
-## Herramientas externas utilizadas
-
-- [Nuclei](https://github.com/projectdiscovery/nuclei) (ProjectDiscovery)
-- [OWASP ZAP](https://www.zaproxy.org/)
-- [sqlmap](https://sqlmap.org/)
-- [Playwright](https://playwright.dev/python/) (para crawling JS)
-- [PyYAML](https://pyyaml.org/) (opcional para exportar YAML)
-- [BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)
-- [Requests](https://docs.python-requests.org/)
-
-
-## Cambios recientes
-
-### v0.2.0 (Febrero 2026)
-- ✅ **Módulo Security Headers completo**: Análisis profesional de headers HTTP según OWASP
-  - Detección de 7 headers de seguridad críticos
-  - Validación de CSP y HSTS con análisis profundo
-  - Information disclosure detection
-  - CVSS scoring automático
-  - Exportación JSON estructurada
-- ✅ **Scanner mejorado**: Consolidación de reportes y ejecución concurrente
-- ✅ **Documentación completa**: docs/HEADERS_MODULE.md con ejemplos y referencias
-
-### v0.1.0 (Enero 2026)
-- Añadida visualización interactiva del árbol de crawling (`crawl_tree.html`)
-- Mejorada la estética general de la visualización (CSS, SVG, responsive)
-- Automatización del flujo de crawling y visualización
-- Integración completa con Nuclei
-- Crawling inteligente con soporte JS (Playwright)
-
-## Licencia
-
-Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
-
-## Características principales
-
-- Crawling inteligente de URLs, formularios y recursos (robots.txt, sitemap.xml, manifest.json, service workers)
-- Soporte para crawling dinámico con Playwright (JS)
-- Fingerprinting tecnológico: servidor, frameworks, cookies, WAF
-- Detección de vulnerabilidades: Security Headers (implementado), XSS, SQLi, LFI, CSRF, CORS, Auth (próximamente)
-- Validación de falsos positivos
-- Integración con Nuclei, sqlmap y OWASP ZAP
-- Exportación de resultados en JSON, CSV, YAML y HTML profesional
-- Plantillas de reporte personalizables (Jinja2)
-- Logging centralizado y colorido
-- Modularidad total: fácil de extender con nuevos módulos y payloads
-- Ejecución concurrente optimizada
-
-## Estructura y componentes
-
-```
-websec-framework/
-├── config/                 # Configuración de objetivos (YAML)
-├── core/                   # Lógica principal y orquestación
-│   ├── base_module.py      # Interfaz base para módulos
-│   ├── crawler.py          # Crawling inteligente
-│   ├── fingerprint.py      # Fingerprinting tecnológico
-│   ├── scanner.py          # Orquestador de módulos
-│   ├── validator.py        # Validación de falsos positivos
-│   ├── reporter.py         # Generación de reportes
-│   ├── logger.py           # Logger centralizado
-│   └── external/           # Integración con Nuclei, sqlmap, ZAP
-├── modules/                # Módulos de vulnerabilidad
-│   ├── headers.py          # ✅ Security Headers (implementado)
-│   ├── xss.py              # 🚧 XSS (próximamente)
-│   ├── sqli.py             # 🚧 SQLi (próximamente)
-│   └── ...                 # Otros módulos
-├── payloads/               # Payloads para pruebas de inyección
-├── reports/                # Resultados y reportes generados
-├── templates/              # Plantillas HTML para reportes
-├── tools/                  # Binarios externos (Nuclei, sqlmap, ZAP)
-├── docs/                   # Documentación técnica
-├── run.py                  # Script principal de ejecución
-├── app.py                  # Servidor Flask para visualización
-└── requirements.txt        # Dependencias Python
+class NuevoModulo(EnhancedVulnerabilityModule):
+    def __init__(self, config):
+        super().__init__(config)
+        self.payloads = self._load_payloads('nuevo_modulo')
+    
+    def scan(self):
+        # Implementar lógica de escaneo
+        injection_points = self._discover_injection_points()
+        # ... resto de la lógica
+        self._export_results()
 ```
 
-### Descripción de carpetas clave
+#### 🧪 Añadir Tests
+- Tests unitarios en `tests/`
+- Tests de integración
+- Tests de performance
 
-- **core/**: Motor del framework. Incluye crawling, fingerprinting, orquestación de módulos, validación y reportería.
-- **modules/**: Cada archivo implementa un módulo de detección de vulnerabilidad. Todos heredan de `VulnerabilityModule`.
-- **core/external/**: Integración robusta con Nuclei, sqlmap y ZAP (ejecución, parseo de resultados, manejo de errores).
-- **payloads/**: Listas de payloads para pruebas automáticas (XSS, SQLi, LFI, etc.).
-- **templates/**: Plantillas Jinja2 para reportes HTML profesionales.
-- **config/**: Archivos YAML para definir objetivos, cabeceras, cookies y parámetros de escaneo.
-- **tools/**: Binarios y recursos de herramientas externas (no incluidos, deben descargarse manualmente).
-- **docs/**: Documentación técnica, dependencias y plan de desarrollo.
+### Código de Conducta
 
-## Flujo de trabajo
+- Sé respetuoso y profesional
+- Acepta críticas constructivas
+- Enfócate en lo mejor para el proyecto
+- Ayuda a otros contribuidores
 
-1. **Configuración**: Define el objetivo y parámetros (puede ser vía CLI o config YAML)
-2. **Crawling**: Descubre URLs, formularios y recursos usando crawling inteligente (con o sin JS)
-3. **Fingerprinting**: Identifica tecnologías, frameworks, cookies y posibles WAF
-4. **Escaneo de vulnerabilidades**: Ejecución concurrente de todos los módulos registrados
-5. **Validación**: Se filtran falsos positivos mediante heurísticas y comparación de respuestas
-6. **Reporte**: Se genera un reporte profesional consolidado en múltiples formatos
+### Reconocimiento
 
-## Cambios recientes
+Los contribuidores serán reconocidos en:
+- [CHANGELOG.md](CHANGELOG.md)
+- Sección de [Agradecimientos](#-agradecimientos)
+- Releases del proyecto
 
-### v0.8.0 (Febrero 2026) - ACTUAL 🎉
-- ✅ **Integración de Nmap**: Escaneo de puertos y detección de servicios
-  - **NmapRunner**: Integración completa con python-nmap
-  - **PortScanModule**: Módulo de escaneo de puertos con análisis de severidad
-  - **4 tipos de escaneo**: Quick, Full, Service, Vulnerability
-  - **Detección de OS**: Fingerprinting de sistemas operativos
-  - **Análisis de servicios**: Detección de versiones y productos
-  - **Recomendaciones automáticas**: Por tipo de servicio y puerto
-  - **Documentación completa**: docs/NMAP_INTEGRATION.md
-  - **Tests incluidos**: tests/test_nmap_integration.py
-- ✅ **Sección de Explotación en Reportes HTML**: POCs reales y funcionales
-  - **10 módulos con POCs**: XSS, SQLi, CSRF, LFI, SSRF, XXE, CORS, Auth, Headers, CMDI
-  - **Comandos listos para usar**: SQLMap, curl, reverse shells, etc.
-  - **Pasos detallados**: Guías paso a paso para cada vulnerabilidad
-  - **Herramientas recomendadas**: Para cada tipo de ataque
-  - **Impacto potencial**: Claramente explicado
-  - **Diseño distintivo**: Código resaltado y visual profesional
-  - **Documentación**: docs/EXPLOITATION_SECTION.md
-  - **Ejemplos**: docs/EXPLOITATION_POC_EXAMPLES.md
+---
 
-### v0.7.0 (Febrero 2026)
-- ✅ **4 Nuevos Módulos de Vulnerabilidad**: Implementación completa
-  - **XXE (XML External Entity)**: 6 payloads, detección de lectura de archivos y SSRF
-  - **SSRF (Server-Side Request Forgery)**: 15+ payloads, detección de metadata endpoints
-  - **Command Injection**: 20+ payloads para Linux/Unix y Windows, time-based detection
-  - **Authentication**: 12 credenciales por defecto, detección de HTTP Basic, brute force protection
-- ✅ **10/10 Módulos Completos**: Cobertura 100% de OWASP Top 10 2021
-- ✅ **300+ Payloads Totales**: Across all modules
-- ✅ **Documentación Completa**:
-  - docs/XXE_MODULE.md
-  - docs/ALL_MODULES_SUMMARY.md
-  - docs/IMPLEMENTATION_COMPLETE.md
-- ✅ **Tests Completos**: 12 suites de pruebas
-- ✅ **Integración Total**: Todos los módulos en run.py y scanner
-- ✅ **Estado**: LISTO PARA PRODUCCIÓN
+## 🗺️ Roadmap
 
-### v0.6.0 (Febrero 2026)
-- ✅ **Integraciones Externas Completas**:
-  - **SQLMap Runner**: Integración completa con SQLMap
-  - **OWASP ZAP Runner**: Integración completa con ZAP
-  - **Nuclei Runner**: Mejorado y documentado
-- ✅ **Instalación Automatizada**: tools/install_tools.py
-- ✅ **Documentación Exhaustiva**: docs/EXTERNAL_INTEGRATIONS.md
-- ✅ **Tests de Integración**: tests/test_external_tools.py
+### ✅ Versión 0.9.0 (Actual)
+- [x] 10 módulos de vulnerabilidad completos
+- [x] Sistema de validación avanzado
+- [x] Optimización de performance (40% menos código)
+- [x] HTTPClient centralizado con session pooling
+- [x] PayloadManager con Singleton
+- [x] Integración con Nmap, Nuclei, SQLMap, ZAP
+- [x] Reportes HTML profesionales con POCs
 
-### v0.5.0 (Febrero 2026)
-- ✅ **Sistema de Validación Completo**: Reducción de falsos positivos
-  - Comparación de respuestas baseline con cache inteligente
-  - Detección automática de falsos positivos
-  - Scoring de confianza (0-100) multi-factor
-  - Análisis de diferencias significativas (status, longitud, similitud)
-  - Validación específica por tipo de vulnerabilidad
-  - Estadísticas detalladas de validación
-  - Filtrado opcional de baja confianza
-  - 600+ líneas de código en `core/validator.py`
-- ✅ **Integración con Scanner**: Validación automática de hallazgos
-- ✅ **Documentación completa**: docs/VALIDATION_SYSTEM.md
-- ✅ **Script de prueba**: tests/test_validation_system.py
+### 🚧 Versión 1.0.0 (Q3 2026)
+- [ ] **Dashboard Web en Tiempo Real**
+  - Interfaz web moderna con React/Vue
+  - Visualización de escaneos en progreso
+  - Gestión de múltiples targets
+  - Histórico de escaneos
 
-### v0.4.0 (Febrero 2026)
-- ✅ **Módulo CSRF completo**: Detección de Cross-Site Request Forgery
-- ✅ **Módulo CORS completo**: Análisis de configuraciones CORS
-- ✅ **Módulo LFI/RFI completo**: Detección de File Inclusion
-- ✅ **Payloads LFI ampliados**: 40+ payloads en payloads/lfi.txt
-- ✅ **Documentación completa**: docs/CSRF_CORS_LFI_MODULES.md
+- [ ] **API REST Completa**
+  - Endpoints para iniciar/detener escaneos
+  - Consulta de resultados
+  - Gestión de configuraciones
+  - Webhooks para notificaciones
 
-### v0.3.0 (Febrero 2026)
-- ✅ **Reportes HTML Profesionales**: Estilo Acunetix/Burp Suite
-- ✅ **Exportación PDF Automática**: Integración con wkhtmltopdf
-- ✅ **Módulo XSS completo**: 60+ payloads
-- ✅ **Módulo SQLi completo**: 100+ payloads
-- ✅ **Payloads actualizados**: Archivos xss.txt y sqli.txt ampliados
-- ✅ **Tests**: Scripts de prueba para validación
+- [ ] **Machine Learning para Scoring**
+  - Modelo ML para scoring de confianza
+  - Aprendizaje de falsos positivos
+  - Mejora continua de precisión
 
-### v0.2.0 (Febrero 2026)
-- ✅ **Módulo Security Headers completo**: Análisis profesional de headers HTTP según OWASP
-  - Detección de 7 headers de seguridad críticos
-  - Validación de CSP y HSTS con análisis profundo
-  - Information disclosure detection
-  - CVSS scoring automático
-  - Exportación JSON estructurada
-- ✅ **Scanner mejorado**: Consolidación de reportes y ejecución concurrente
-- ✅ **Documentación completa**: docs/HEADERS_MODULE.md con ejemplos y referencias
-- ✅ **Guía rápida**: QUICKSTART.md para inicio rápido
-- ✅ **Help mejorado**: --help con formato profesional y completo
+- [ ] **Tests Unitarios Completos**
+  - Cobertura > 80%
+  - Tests de integración
+  - Tests de performance
+  - CI/CD con GitHub Actions
 
-### v0.1.0 (Enero 2026)
-- Añadida visualización interactiva del árbol de crawling (`crawl_tree.html`)
-- Mejorada la estética general de la visualización (CSS, SVG, responsive)
-- Automatización del flujo de crawling y visualización
-- Integración completa con Nuclei
-- Crawling inteligente con soporte JS (Playwright)
+### 🔮 Versión 1.5.0 (Q4 2026)
+- [ ] **Nuevos Módulos**
+  - Insecure Deserialization
+  - Server-Side Template Injection (SSTI)
+  - GraphQL Security Testing
+  - API Security Testing (REST/GraphQL)
 
-## Licencia
+- [ ] **Autenticación Avanzada**
+  - Soporte OAuth 2.0
+  - JWT token handling
+  - Multi-factor authentication testing
+  - Session management testing
 
-Este proyecto está licenciado bajo la Licencia MIT. Consulta el archivo [LICENSE](LICENSE) para más detalles.
+- [ ] **Integración con Burp Suite**
+  - Extensión para Burp Suite
+  - Import/Export de hallazgos
+  - Colaboración con Burp Scanner
+
+### 🌟 Versión 2.0.0 (2027)
+- [ ] **Framework Completo**
+  - 20+ módulos de vulnerabilidad
+  - Soporte para aplicaciones móviles
+  - Análisis de código estático (SAST)
+  - Análisis de dependencias (SCA)
+
+- [ ] **Colaboración en Equipo**
+  - Multi-usuario
+  - Roles y permisos
+  - Comentarios y anotaciones
+  - Integración con Jira/Slack
+
+- [ ] **Compliance y Reporting**
+  - Reportes PCI-DSS
+  - Reportes ISO 27001
+  - Reportes GDPR
+  - Exportación a formatos enterprise
+
+### 💡 Ideas Futuras
+- Integración con CI/CD (Jenkins, GitLab CI, GitHub Actions)
+- Plugin para VS Code
+- Soporte para WebSockets y GraphQL subscriptions
+- Análisis de aplicaciones SPA (Single Page Applications)
+- Fuzzing inteligente con IA
+- Integración con threat intelligence feeds
+
+**¿Tienes ideas?** [Abre un issue](https://github.com/KevPatterson/websec-framework/issues) con la etiqueta `enhancement`
+
+---
+
+## 📄 Licencia
+
+Este proyecto está licenciado bajo la **MIT License** - ver el archivo [LICENSE](LICENSE) para más detalles.
+
+---
+
+## 🙏 Agradecimientos
+
+### Herramientas Integradas
+Este proyecto integra y orquesta herramientas líderes de seguridad:
+
+- **[Nmap](https://nmap.org/)** - Port scanning y detección de servicios
+- **[Nuclei](https://github.com/projectdiscovery/nuclei)** - Template-based vulnerability scanner
+- **[SQLMap](https://sqlmap.org/)** - SQL injection detection y exploitation
+- **[OWASP ZAP](https://www.zaproxy.org/)** - Web application security scanner
+
+### Librerías y Frameworks
+- **[Requests](https://docs.python-requests.org/)** - HTTP library
+- **[BeautifulSoup](https://www.crummy.com/software/BeautifulSoup/)** - HTML parsing
+- **[Playwright](https://playwright.dev/python/)** - Browser automation
+- **[Jinja2](https://jinja.palletsprojects.com/)** - Template engine
+- **[Chart.js](https://www.chartjs.org/)** - Gráficos interactivos
+- **[colorlog](https://github.com/borntyping/python-colorlog)** - Colored logging
+
+### Inspiración
+- **[Acunetix](https://www.acunetix.com/)** - Inspiración para reportes profesionales
+- **[Burp Suite](https://portswigger.net/burp)** - Referencia en herramientas de seguridad
+- **[OWASP](https://owasp.org/)** - Estándares y mejores prácticas
+
+### Comunidad
+Gracias a todos los contribuidores que han ayudado a mejorar este proyecto:
+- [Lista de contribuidores](https://github.com/tu-usuario/websec-framework/graphs/contributors)
+
+### Recursos Educativos
+- **[OWASP Top 10](https://owasp.org/www-project-top-ten/)**
+- **[PortSwigger Web Security Academy](https://portswigger.net/web-security)**
+- **[HackTricks](https://book.hacktricks.xyz/)**
+- **[PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings)**
+
+---
+
+## 📞 Contacto y Soporte
+
+### Reportar Problemas
+- **Issues**: [GitHub Issues](https://github.com/tu-usuario/websec-framework/issues)
+- **Security**: Para vulnerabilidades de seguridad, contacta directamente
+
+### Comunidad
+- **Discussions**: [GitHub Discussions](https://github.com/tu-usuario/websec-framework/discussions)
+- **Wiki**: [GitHub Wiki](https://github.com/tu-usuario/websec-framework/wiki)
+
+### Autor
+**Kevin Reinaldo Patterson Forján**
+- GitHub: [@tu-usuario](https://github.com/tu-usuario)
+- Email: tu-email@example.com
+
+---
+
+<div align="center">
+
+### ⭐ Si este proyecto te resulta útil, considera darle una estrella en GitHub
+
+**[⬆ Volver arriba](#-websec-framework)**
 
 ---
 
 **Desarrollado con ❤️ para la comunidad de seguridad web**
+
+</div>
+
+
+
